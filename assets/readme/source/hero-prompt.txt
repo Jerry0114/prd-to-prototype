@@ -1,0 +1,7 @@
+Built-in ImageGen; one generation; transparent background.
+
+Reference: maintainer-provided AI懂点啥 current C avatar, used only for the character's identity and material. No private source path is required to rebuild the composition with the supplied cutout.
+
+Create one transparent-background character cutout for an AI skill GitHub README hero. Use the reference image as the strict identity and material reference: the exact friendly rounded white matte ceramic observer with oversized thick cobalt-blue round glasses, tiny glossy dark eyes, small smile, gently curious head tilt, clean soft studio lighting. Preserve the face, blue glasses hue #2537B8, white ceramic material, and restrained friendly expression. Extend it to a compact half-body figure, holding a single upright plain white PRD document in one small rounded hand and pointing toward the right with the other small rounded hand as if reviewing and approving a prototype. The document has only three short thin blue geometric rules and a blue checkmark, absolutely no text or letters. Character should face slightly right. One isolated character with document, generous padding, no floor, background, scenery, halo, brand words, extra objects, or generated UI. Real transparent alpha background and crisp edges. Refined subtle 3D brand illustration; no robot metal, glass, or clothing.
+
+Exact Chinese copy, flow lines and the genuine prototype screenshot are composed deterministically in hero-layout.svg, not generated as part of the character image.

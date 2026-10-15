@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1200" height="860" viewBox="0 0 1200 860" role="img" aria-labelledby="title desc">
+  <title id="title">PRD to Prototype — AI懂点啥</title>
+  <desc id="desc">PRD 输入，确认页面范围与逐页定义，生成可交互 HTML 原型与开发说明。真实任务板案例展示页面画布、模块标注和交付文档。</desc>
+  <defs>
+    <clipPath id="frame"><rect x="434" y="394" width="698" height="347" rx="6"/></clipPath>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1 1L8 5L1 9" fill="none" stroke="#2537B8" stroke-width="1.5"/></marker>
+    <style>
+      text { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Noto Sans SC', sans-serif; }
+      .blue { fill: #2537B8; } .ink { fill: #252934; } .muted { fill: #6C7384; }
+    </style>
+  </defs>
+  <rect width="1200" height="860" rx="24" fill="#FBFCFF"/>
+  <g id="identity">
+    <circle cx="62" cy="54" r="6" fill="#2537B8"/>
+    <text x="80" y="62" font-size="24" font-weight="600" class="blue">AI懂点啥</text>
+    <text x="212" y="62" font-size="22" class="muted">/ 开源 Skill</text>
+    <text x="1142" y="62" text-anchor="end" font-size="21" class="muted">prd-to-prototype</text>
+  </g>
+  <g id="promise">
+    <text x="56" y="155" font-size="64" font-weight="700" class="ink">把 PRD 变成</text>
+    <text x="56" y="236" font-size="72" font-weight="700" class="blue">可交付的原型。</text>
+    <text x="60" y="286" font-size="26" class="muted">先确认范围与逻辑，再生成页面与开发说明。</text>
+  </g>
+  <g id="reviewer">
+    <image x="851" y="85" width="292" height="251" preserveAspectRatio="xMidYMid meet" xlink:href="hero-subject.png"/>
+  </g>
+  <g id="workflow">
+    <rect x="56" y="346" width="292" height="99" rx="12" fill="#FFFFFF" stroke="#E1E6F0" stroke-width="1.5"/>
+    <path d="M80 370H103L112 379V414H80Z M103 370V380H112 M87 389H103 M87 397H99" fill="none" stroke="#2537B8" stroke-width="2" stroke-linejoin="round"/>
+    <text x="130" y="384" font-size="28" font-weight="600" class="ink">PRD / 需求资料</text>
+    <text x="130" y="422" font-size="20" class="muted">原文依据 · 项目规范</text>
+    <path d="M202 445V478" fill="none" stroke="#2537B8" stroke-width="2" marker-end="url(#arrow)"/>
+    <rect x="56" y="482" width="292" height="68" rx="12" fill="#F3F5FC" stroke="#2537B8" stroke-width="1.5"/>
+    <circle cx="88" cy="516" r="15" fill="#2537B8"/>
+    <text x="88" y="523" text-anchor="middle" font-size="20" fill="#FFFFFF" font-weight="600">1</text>
+    <text x="118" y="525" font-size="27" font-weight="600" class="blue">确认页面范围</text>
+    <path d="M202 550V583" fill="none" stroke="#2537B8" stroke-width="2" marker-end="url(#arrow)"/>
+    <rect x="56" y="587" width="292" height="68" rx="12" fill="#F3F5FC" stroke="#2537B8" stroke-width="1.5"/>
+    <circle cx="88" cy="621" r="15" fill="#2537B8"/>
+    <text x="88" y="628" text-anchor="middle" font-size="20" fill="#FFFFFF" font-weight="600">2</text>
+    <text x="118" y="630" font-size="27" font-weight="600" class="blue">确认逐页定义</text>
+    <path d="M348 621H414" fill="none" stroke="#2537B8" stroke-width="2" marker-end="url(#arrow)"/>
+    <text x="56" y="711" font-size="25" class="ink" font-weight="600">AI 拆解与生成</text>
+    <text x="56" y="745" font-size="23" class="muted">你把握范围、规则与验收</text>
+  </g>
+  <g id="real-project-proof">
+    <rect x="422" y="350" width="722" height="412" rx="14" fill="#172777" opacity=".055" transform="translate(0 6)"/>
+    <rect x="422" y="346" width="722" height="412" rx="14" fill="#FFFFFF" stroke="#DCE2F2" stroke-width="1.5"/>
+    <text x="443" y="377" font-size="22" font-weight="600" class="blue">可交互 HTML 原型</text>
+    <text x="1122" y="377" text-anchor="end" font-size="19" class="muted">真实案例 · 团队任务板</text>
+    <g clip-path="url(#frame)">
+      <image x="434" y="394" width="698" height="347" preserveAspectRatio="xMidYMid slice" xlink:href="prototype-proof.png"/>
+    </g>
+  </g>
+  <path d="M56 788H1144" stroke="#E1E6F0" stroke-width="1.5"/>
+  <g id="feature-cues" font-size="24" font-weight="600" fill="#172777">
+    <text x="56" y="830">需求有据可查</text>
+    <text x="344" y="830">两次人工确认</text>
+    <text x="632" y="830">多页面可交互</text>
+    <text x="920" y="830">标注与说明随附</text>
+  </g>
+</svg>

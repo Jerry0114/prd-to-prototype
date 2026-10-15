@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(process.argv.includes('--root') ? process.argv[process.argv.indexOf('--root') + 1] : path.join(path.dirname(fileURLToPath(import.meta.url)), '..'));
 const skipped = new Set(['.git', 'node_modules', 'output', 'dist', 'coverage', 'test-results', 'playwright-report']);
-const textTypes = new Set(['.md', '.json', '.js', '.mjs', '.html', '.css', '.svg', '.yaml', '.yml']);
+const textTypes = new Set(['.md', '.txt', '.json', '.js', '.mjs', '.cjs', '.html', '.css', '.svg', '.yaml', '.yml']);
 const rules = [
   ['personal-home-path', /(?:\/Users\/|\/home\/|[A-Z]:\\Users\\)[A-Za-z0-9_.-]+/],
   ['private-network', /\b(?:10\.\d{1,3}|192\.168|172\.(?:1[6-9]|2\d|3[01]))\.\d{1,3}\.\d{1,3}\b/],
