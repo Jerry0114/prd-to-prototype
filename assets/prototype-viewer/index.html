@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>原型工作台</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="viewer.css?v=20260806-2" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand-lockup">
+          <img class="brand-mark" src="assets/prototype-viewer/prototype-mark.svg" alt="Prototype Studio" />
+          <div class="brand-copy">
+            <strong>原型工作台</strong>
+            <span id="projectName">读取项目中</span>
+          </div>
+        </div>
+        <div class="toolbar" aria-label="画布工具栏">
+          <button type="button" data-zoom="out" aria-label="缩小">−</button>
+          <div class="zoom-picker">
+            <button type="button" id="zoomMenuButton" class="zoom-menu-button" aria-haspopup="menu" aria-expanded="false">
+              <span id="zoomValue">125%</span>
+              <span class="zoom-chevron" aria-hidden="true"></span>
+            </button>
+            <div id="zoomMenu" class="zoom-menu" role="menu" hidden>
+              <button type="button" role="menuitem" data-zoom-level="0.5">50%</button>
+              <button type="button" role="menuitem" data-zoom-level="0.8">80%</button>
+              <button type="button" role="menuitem" data-zoom-level="1">100%</button>
+              <button type="button" role="menuitem" class="is-active" data-zoom-level="1.25">125%</button>
+              <button type="button" role="menuitem" data-zoom-level="1.5">150%</button>
+            </div>
+          </div>
+          <button type="button" data-zoom="in" aria-label="放大">＋</button>
+          <button type="button" class="tool-text" id="fitButton">适应画布</button>
+          <button type="button" class="tool-text" id="resetButton">重置视图</button>
+        </div>
+        <div class="project-meta">
+          <span id="pageCount">读取中</span>
+        </div>
+      </header>
+
+      <aside class="sidebar">
+        <label class="search-box">
+          <span aria-hidden="true">⌕</span>
+          <input id="pageSearch" type="search" placeholder="搜索页面" />
+        </label>
+        <button type="button" id="overviewNav" class="overview-nav">
+          <span class="overview-icon" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span>流程总览</span>
+        </button>
+        <nav id="pageNav" class="page-nav" aria-label="原型页面目录"></nav>
+      </aside>
+
+      <main class="workspace" id="workspace">
+        <div class="canvas-sizer" id="canvasSizer">
+          <section class="canvas" id="canvas" aria-label="自动流程画布">
+            <svg class="connections" id="connections" aria-hidden="true"></svg>
+            <div id="flow" class="flow"></div>
+          </section>
+        </div>
+        <div class="canvas-hint">双击页面打开运行预览</div>
+      </main>
+    </div>
+
+    <dialog id="previewDialog" class="preview-dialog">
+      <div class="preview-topbar">
+        <div>
+          <span class="eyebrow">RUNNING PREVIEW</span>
+          <strong id="previewTitle">页面预览</strong>
+        </div>
+        <div class="preview-actions">
+          <button type="button" id="openNewWindow">新窗口打开 ↗</button>
+          <button type="button" id="closePreview">关闭</button>
+        </div>
+      </div>
+      <div id="previewViewport" class="preview-viewport">
+        <div id="previewDevice" class="preview-device">
+          <iframe id="previewFrame" title="原型运行预览"></iframe>
+        </div>
+      </div>
+    </dialog>
+
+    <template id="pageNodeTemplate">
+      <article class="page-node">
+        <div class="node-head">
+          <div>
+            <span class="node-index"></span>
+            <strong class="node-title"></strong>
+            <span class="node-module"></span>
+          </div>
+          <div class="node-actions">
+            <button type="button" class="state-button is-active" data-state="normal">正常</button>
+            <button type="button" class="state-button" data-state="empty">空态</button>
+            <button type="button" class="state-button" data-state="forbidden">无权限</button>
+            <button type="button" class="state-button" data-state="error">失败</button>
+            <button type="button" class="run-button">运行 ↗</button>
+          </div>
+        </div>
+        <div class="node-body">
+          <div class="screen-stage">
+            <div class="screen-frame">
+              <iframe loading="lazy" title="页面缩略预览"></iframe>
+              <span class="viewport-label">1440 × 900 · WEB</span>
+            </div>
+          </div>
+          <aside class="annotation-card">
+            <div class="annotation-head">
+              <span>页面说明</span>
+              <span class="annotation-controls">
+                <button type="button" class="annotation-add-button" title="在页面上添加标记" aria-label="在页面上添加标记" aria-pressed="false">
+                  <span aria-hidden="true">＋</span>
+                  <b>标记</b>
+                </button>
+                <label class="marker-toggle" title="显示或隐藏页面编号标记">
+                  <span>显示</span>
+                  <input type="checkbox" checked aria-label="显示页面编号标记" />
+                  <i aria-hidden="true"></i>
+                </label>
+                <em class="annotation-count"></em>
+              </span>
+            </div>
+            <div class="handoff-tabs" role="tablist" aria-label="页面说明分类">
+              <button type="button" class="is-active" role="tab" aria-selected="true" data-handoff-tab="overview">概要</button>
+              <button type="button" role="tab" aria-selected="false" data-handoff-tab="annotations">标注</button>
+              <button type="button" role="tab" aria-selected="false" data-handoff-tab="states">状态</button>
+              <button type="button" role="tab" aria-selected="false" data-handoff-tab="delivery">交付</button>
+            </div>
+            <div class="handoff-panel is-active" role="tabpanel" data-handoff-panel="overview"></div>
+            <div class="handoff-panel" role="tabpanel" data-handoff-panel="annotations">
+              <div class="annotation-storage-status" data-state="loading" title="人工标注保存状态">
+                <i aria-hidden="true"></i>
+                <span>读取保存状态</span>
+              </div>
+              <div class="annotation-list"></div>
+            </div>
+            <div class="handoff-panel" role="tabpanel" data-handoff-panel="states"></div>
+            <div class="handoff-panel" role="tabpanel" data-handoff-panel="delivery"></div>
+          </aside>
+        </div>
+      </article>
+    </template>
+
+    <script src="annotation-store.js?v=20260806-2"></script>
+    <script src="document-preview-core.js?v=20260819-1"></script>
+    <script src="viewer.js?v=20260819-1"></script>
+  </body>
+</html>

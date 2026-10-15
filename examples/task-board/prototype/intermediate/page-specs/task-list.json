@@ -1,0 +1,303 @@
+{
+  "schemaVersion": "1.0",
+  "projectId": "task-board-demo",
+  "pageId": "task-list",
+  "title": "任务列表",
+  "purpose": "管理团队任务（虚构教学案例）",
+  "requirementRefs": [
+    "REQ-001",
+    "REQ-002",
+    "REQ-003",
+    "REQ-004"
+  ],
+  "viewport": {
+    "kind": "web",
+    "width": 1280,
+    "height": 800
+  },
+  "informationPriority": [
+    "筛选区",
+    "任务列表"
+  ],
+  "sections": [
+    {
+      "id": "filters",
+      "title": "筛选区",
+      "component": "section",
+      "contentRule": "参见同模块标注，数据为虚构任务。"
+    },
+    {
+      "id": "tasks",
+      "title": "任务列表",
+      "component": "section",
+      "contentRule": "参见同模块标注，数据为虚构任务。"
+    }
+  ],
+  "fields": [
+    {
+      "id": "keyword",
+      "label": "关键词",
+      "controlType": "text",
+      "defaultValue": "",
+      "dataRule": "按任务标题包含匹配，空值表示全部。",
+      "requirementRefs": [
+        "REQ-001",
+        "REQ-002",
+        "REQ-003",
+        "REQ-004"
+      ]
+    },
+    {
+      "id": "status",
+      "label": "进度",
+      "controlType": "select",
+      "defaultValue": "all",
+      "dataRule": "与关键词同时生效。",
+      "options": [
+        {
+          "value": "all",
+          "label": "全部进度"
+        },
+        {
+          "value": "todo",
+          "label": "待办"
+        },
+        {
+          "value": "doing",
+          "label": "进行中"
+        },
+        {
+          "value": "done",
+          "label": "已完成"
+        }
+      ],
+      "requirementRefs": [
+        "REQ-001",
+        "REQ-002",
+        "REQ-003",
+        "REQ-004"
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "id": "open",
+      "label": "查看任务",
+      "trigger": "点击任务标题",
+      "result": "进入详情并传递任务 ID",
+      "targetPageId": "task-detail",
+      "failure": "任务不存在时展示空态",
+      "logic": [
+        "无需请求外部接口；读取本地会话数据；没有分页；重复点击不新增记录。"
+      ],
+      "requirementRefs": [
+        "REQ-001",
+        "REQ-002",
+        "REQ-003",
+        "REQ-004"
+      ]
+    }
+  ],
+  "states": [
+    {
+      "id": "normal",
+      "applicable": true,
+      "description": "展示任务内容"
+    },
+    {
+      "id": "loading",
+      "applicable": true,
+      "description": "正在加载任务"
+    },
+    {
+      "id": "empty",
+      "applicable": true,
+      "description": "没有匹配任务或任务不存在"
+    },
+    {
+      "id": "error",
+      "applicable": true,
+      "description": "加载失败，可重试"
+    },
+    {
+      "id": "forbidden",
+      "applicable": false,
+      "description": "本样例无权限模型"
+    },
+    {
+      "id": "expired",
+      "applicable": false,
+      "description": "本样例无过期业务"
+    }
+  ],
+  "annotations": [
+    {
+      "id": "task-list-note-1",
+      "title": "筛选区",
+      "scope": "module",
+      "moduleId": "filters",
+      "content": "模块定义\n查找当前任务。\n\n展示内容\n关键词输入、进度选择。\n\n数据规则\n数据完全虚构，使用本地会话保存；关键词匹配标题并与进度筛选同时生效。\n\n交互逻辑\n点击标题传递任务 ID；标记完成更新会话；返回后保留查询条件。\n\n异常与状态\n加载中显示进度提示；无结果显示空态；错误允许重试；没有权限与过期场景。\n\n关联文档\ndocs/PRD.md",
+      "requirementRefs": [
+        "REQ-001",
+        "REQ-002",
+        "REQ-003",
+        "REQ-004"
+      ],
+      "covers": [
+        "section:filters",
+        "field:keyword",
+        "field:status"
+      ],
+      "anchor": {
+        "anchorId": "filters",
+        "offset": {
+          "x": 8,
+          "y": 8
+        },
+        "fallback": {
+          "x": 8,
+          "y": 25,
+          "coordinateSpace": "reference-viewport-percent"
+        },
+        "bindingStatus": "bound"
+      }
+    },
+    {
+      "id": "task-list-note-2",
+      "title": "任务列表",
+      "scope": "module",
+      "moduleId": "tasks",
+      "content": "模块定义\n呈现任务信息与操作。\n\n展示内容\n任务标题、说明、成员代号、日期和进度；操作按页面提供查看、返回或完成。\n\n数据规则\n数据完全虚构，使用本地会话保存；关键词匹配标题并与进度筛选同时生效。\n\n交互逻辑\n点击标题传递任务 ID；标记完成更新会话；返回后保留查询条件。\n\n异常与状态\n加载中显示进度提示；无结果显示空态；错误允许重试；没有权限与过期场景。\n\n关联文档\ndocs/PRD.md",
+      "requirementRefs": [
+        "REQ-001",
+        "REQ-002",
+        "REQ-003",
+        "REQ-004"
+      ],
+      "covers": [
+        "section:tasks",
+        "action:open",
+        "state:normal",
+        "state:loading",
+        "state:empty",
+        "state:error"
+      ],
+      "anchor": {
+        "anchorId": "tasks",
+        "offset": {
+          "x": 8,
+          "y": 8
+        },
+        "fallback": {
+          "x": 8,
+          "y": 50,
+          "coordinateSpace": "reference-viewport-percent"
+        },
+        "bindingStatus": "bound"
+      }
+    }
+  ],
+  "handoff": {
+    "version": "2.1",
+    "completenessTarget": "implement-without-opening-prd",
+    "annotationPolicy": {
+      "strategy": "module-complete",
+      "moduleSource": "sections",
+      "coverageScope": "full-page",
+      "requiredDimensions": [
+        "definition",
+        "content",
+        "interaction"
+      ],
+      "minimumApplicableDimensions": 3
+    },
+    "coverageDimensions": [
+      "fields",
+      "options",
+      "content",
+      "actions",
+      "states",
+      "navigation",
+      "acceptance",
+      "roles",
+      "preconditions"
+    ],
+    "pageOverview": {
+      "roles": [
+        {
+          "label": "团队成员",
+          "description": "团队成员",
+          "requirementRefs": [
+            "REQ-001",
+            "REQ-002",
+            "REQ-003",
+            "REQ-004"
+          ]
+        }
+      ],
+      "entries": [
+        {
+          "label": "任务管理入口",
+          "description": "任务管理入口",
+          "requirementRefs": [
+            "REQ-001",
+            "REQ-002",
+            "REQ-003",
+            "REQ-004"
+          ]
+        }
+      ],
+      "exits": [
+        {
+          "label": "任务详情",
+          "description": "任务详情",
+          "requirementRefs": [
+            "REQ-001",
+            "REQ-002",
+            "REQ-003",
+            "REQ-004"
+          ]
+        }
+      ],
+      "preconditions": [
+        {
+          "label": "浏览器允许读取本地会话数据",
+          "description": "浏览器允许读取本地会话数据",
+          "requirementRefs": [
+            "REQ-001",
+            "REQ-002",
+            "REQ-003",
+            "REQ-004"
+          ]
+        }
+      ]
+    },
+    "statusTransitions": [],
+    "acceptanceCriteria": [
+      {
+        "id": "AC-task-list",
+        "title": "页面主流程",
+        "given": "存在虚构任务数据",
+        "when": "搜索并查看任务",
+        "then": "展示对应详情",
+        "requirementRefs": [
+          "REQ-001",
+          "REQ-002",
+          "REQ-003",
+          "REQ-004"
+        ]
+      }
+    ],
+    "relatedDocs": [
+      {
+        "label": "虚构案例 PRD",
+        "path": "docs/PRD.md"
+      }
+    ],
+    "audience": "frontend-development"
+  },
+  "designSystemRefs": [
+    "assets/task-board.css"
+  ],
+  "openQuestions": []
+}

@@ -1,0 +1,4 @@
+interface:
+  display_name: "PRD 原型生成"
+  short_description: "将 PRD 生成可追溯原型，并支持标注编辑与本地文件持久化"
+  default_prompt: "使用 $prd-to-prototype 解析当前 PRD，拆分并确认页面后，按项目场景选择通用或项目设计系统生成可验证原型；页面备注使用标题和内容两字段，并将人工调整保存到项目本地文件。"

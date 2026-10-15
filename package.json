@@ -1,0 +1,15 @@
+{
+  "name": "prd-to-prototype",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Traceable PRD-to-HTML prototypes with annotations and a local viewer",
+  "license": "MIT",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "test": "node tests/run-tests.js && node tests/public-package.test.js",
+    "demo": "node scripts/serve_prototype_project.js --project examples/task-board/prototype",
+    "validate:demo": "node scripts/check_page_brief_gate.js --project examples/task-board/prototype && node scripts/validate_artifacts.js --project examples/task-board/prototype",
+    "audit:public": "node scripts/audit-public.mjs",
+    "check": "npm test && npm run validate:demo && npm run audit:public"
+  }
+}

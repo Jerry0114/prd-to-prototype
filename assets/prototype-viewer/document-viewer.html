@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>关联文档 · 原型工作台</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="document-viewer.css?v=20260819-1" />
+  </head>
+  <body>
+    <header class="document-topbar">
+      <a class="document-brand" href="./" aria-label="返回原型工作台">
+        <img src="assets/prototype-viewer/prototype-mark.svg" alt="" />
+        <span><strong>原型工作台</strong><small>关联文档</small></span>
+      </a>
+      <div class="document-title-wrap">
+        <span>当前文档</span>
+        <strong id="documentTitle">读取中</strong>
+      </div>
+      <button id="closeDocument" type="button">关闭文档</button>
+    </header>
+
+    <main class="document-shell">
+      <article id="documentContent" class="document-content" aria-live="polite">
+        <div class="document-loading">
+          <i aria-hidden="true"></i>
+          <p>正在读取文档</p>
+        </div>
+      </article>
+    </main>
+
+    <script src="marked.umd.js?v=18.0.9"></script>
+    <script src="document-preview-core.js?v=20260819-1"></script>
+    <script src="document-viewer.js?v=20260819-1"></script>
+  </body>
+</html>

@@ -1,0 +1,138 @@
+{
+  "source": "installed prd-to-prototype skill; public core only",
+  "exportedAt": "2026-09-21",
+  "files": [
+    {
+      "path": "SKILL.md",
+      "sha256": "d4e65362c3c413ddfeac684e74e0d634bfddfef0602351222d2179af681599fa"
+    },
+    {
+      "path": "agents/openai.yaml",
+      "sha256": "db5b667c1de037aa1930a72b7787d3ad505a5ba1c84d26e0eff020cd38f1cf5d"
+    },
+    {
+      "path": "assets/prototype-viewer/annotation-store.js",
+      "sha256": "af5ead74e6c090da700a46d0fd6488855432daeabc8b67806cbed87837858d17"
+    },
+    {
+      "path": "assets/prototype-viewer/document-preview-core.js",
+      "sha256": "655dfc194af2a12de3e2bd06d89d5bf2a64ac77eef19fbe222c48fff78722e9b"
+    },
+    {
+      "path": "assets/prototype-viewer/document-viewer.css",
+      "sha256": "d93d13c59efe5a55774cfa72011a169454d36c9ad44eee0b80c87ef83537d1fe"
+    },
+    {
+      "path": "assets/prototype-viewer/document-viewer.html",
+      "sha256": "abd107779f8d696baca67ab334faa2c6254da15797025ed8ba08fb6e2c60bd24"
+    },
+    {
+      "path": "assets/prototype-viewer/document-viewer.js",
+      "sha256": "b052a55238fc4c39216d30f544634e9e84552c2c845293c34cd3fc5f8d508c1d"
+    },
+    {
+      "path": "assets/prototype-viewer/index.html",
+      "sha256": "ea81b5669b25e2e9d6aea9243356b7213989659e93a88c083d3ca47018186a0b"
+    },
+    {
+      "path": "assets/prototype-viewer/marked.LICENSE",
+      "sha256": "8e3a3f82f59a60958f56ca08f445647c32a4733dc7ca6c2c46f6eb898471ab9c"
+    },
+    {
+      "path": "assets/prototype-viewer/marked.umd.js",
+      "sha256": "ba65f1c8948e6b01321399800843e9048b31e1c197652d4b0fafae840b30e32b"
+    },
+    {
+      "path": "assets/prototype-viewer/viewer.css",
+      "sha256": "e0ed569ff6da13b0f4f31d4b431c9e29756ef45ee79b40c6e5622403b7db9e20"
+    },
+    {
+      "path": "assets/prototype-viewer/viewer.js",
+      "sha256": "9637bccb5508c8df508a31de4294ca73f67a5c0b9f100a85c7d288cbd6f51a95"
+    },
+    {
+      "path": "references/annotation-authoring-rules.md",
+      "sha256": "15e963f80a2ca1a8e8099a2d3b6eae3add7125bfcc3e295aeafc37d961aaa354"
+    },
+    {
+      "path": "references/intermediate-models.md",
+      "sha256": "d01ca5b2eb9ecf943d6b8a6eb2fbd370339cecc7812263b21791bba3cbd1d929"
+    },
+    {
+      "path": "references/interpretation-rules.md",
+      "sha256": "ea8f3029bf28cdd294ebfdc236075efd4061424d6ef4045972e79906b665335d"
+    },
+    {
+      "path": "references/page-brief-template.md",
+      "sha256": "4a00e6d9710f63f5d88421d17336f0b5a9ebfa05163375b50c87a6bacb7d3313"
+    },
+    {
+      "path": "references/validation-rules.md",
+      "sha256": "65db97387a51dc7c8175f9a42a564acae42a0e12c8c4c5b661c6fa6f98a6fa7f"
+    },
+    {
+      "path": "schemas/manual-annotations.schema.json",
+      "sha256": "05650ed7607a2aac603859b97dc5ff4c3fc67ee59979664cd44221d0163ef5b7"
+    },
+    {
+      "path": "schemas/page-brief-gate.schema.json",
+      "sha256": "53d16d870f98a6d953324367181419e7f0d7c45e36f19761ea1328ccbb4405b4"
+    },
+    {
+      "path": "schemas/page-map.schema.json",
+      "sha256": "0c4e812edddca247f0e8c2806c680c4e49d487de3a824ac52bab0339839e1299"
+    },
+    {
+      "path": "schemas/page-spec.schema.json",
+      "sha256": "0bcf48637b0b2919e8f5c73bc983fba4cdad01f54f3f92ab2e4253f3a0c7dc42"
+    },
+    {
+      "path": "schemas/requirements.schema.json",
+      "sha256": "8fa5760f7429ffd0daf893f230fc30114c630c1c70c72dca3c85f1a35da0b58f"
+    },
+    {
+      "path": "scripts/check_page_brief_gate.js",
+      "sha256": "0e6d60a158c4f82d28cbf07000e8ada8b8676a1a51f11d9d9e73cbf46f865857"
+    },
+    {
+      "path": "scripts/init-prototype-project.mjs",
+      "sha256": "c44d562ba73b2a2e76bc4b8750a93af695aed080b5e2a70b5629b2c612e67183"
+    },
+    {
+      "path": "scripts/lib/schema-validator.js",
+      "sha256": "139277351b5b9ccec4d36f30f3525473070eccef275d1a2a79586900a8b216a0"
+    },
+    {
+      "path": "scripts/migrate_annotation_model.js",
+      "sha256": "93aa7c08bd057b5db2636dd43d6a30dc943e5f892a51d8e82bce21bed51ab508"
+    },
+    {
+      "path": "scripts/rerun_annotation_content.js",
+      "sha256": "6ddd709d38c548028f3c4f5dd2f96e2d34a1bd9f4d3621d3cb4dda10d5b93662"
+    },
+    {
+      "path": "scripts/rerun_annotation_titles.js",
+      "sha256": "024964d230e1cd9a5d832d859d8c20f512168a1d0cee89a6bf4523052239a932"
+    },
+    {
+      "path": "scripts/serve_prototype_project.js",
+      "sha256": "6ec94bb735d9f67d4c2e126d5ac6b0a3a7999f1fdab61a122143bccbc38a2028"
+    },
+    {
+      "path": "scripts/serve_prototypes.js",
+      "sha256": "a61a845e53c4b9ad79303c87c4c69cb738ed90eb967347b180d26d11eab9dbb9"
+    },
+    {
+      "path": "scripts/sync_viewer.js",
+      "sha256": "3e17963176ab6319b6d70a2c06857578847dd282495c322806ba4d6a829a6635"
+    },
+    {
+      "path": "scripts/validate_artifacts.js",
+      "sha256": "dc119628d95e2417742d0a7ec83da08d11b189d7cfefc192d89a3870fd73c9fa"
+    },
+    {
+      "path": "tests/run-tests.js",
+      "sha256": "e8a2e11e3c1ea81496cb8d3ce89d0bb9868595c7e1aa36403c37e29f004ab23c"
+    }
+  ]
+}

@@ -1,0 +1,274 @@
+{
+  "schemaVersion": "1.0",
+  "project": {
+    "id": "task-board-demo",
+    "name": "团队任务板 · 公开示例",
+    "version": "1.0"
+  },
+  "startPageId": "task-list",
+  "pages": [
+    {
+      "id": "task-list",
+      "title": "任务列表",
+      "module": "任务管理",
+      "path": "pages/task-list.html",
+      "viewport": {
+        "kind": "web",
+        "width": 1280,
+        "height": 800
+      },
+      "specPath": "intermediate/page-specs/task-list.json",
+      "markers": [
+        {
+          "id": "task-list-note-1",
+          "title": "筛选区",
+          "scope": "module",
+          "moduleId": "filters",
+          "content": "模块定义\n查找当前任务。\n\n展示内容\n关键词输入、进度选择。\n\n数据规则\n数据完全虚构，使用本地会话保存；关键词匹配标题并与进度筛选同时生效。\n\n交互逻辑\n点击标题传递任务 ID；标记完成更新会话；返回后保留查询条件。\n\n异常与状态\n加载中显示进度提示；无结果显示空态；错误允许重试；没有权限与过期场景。\n\n关联文档\ndocs/PRD.md",
+          "requirementRefs": [
+            "REQ-001",
+            "REQ-002",
+            "REQ-003",
+            "REQ-004"
+          ],
+          "covers": [
+            "section:filters",
+            "field:keyword",
+            "field:status"
+          ],
+          "anchor": {
+            "anchorId": "filters",
+            "offset": {
+              "x": 8,
+              "y": 8
+            },
+            "fallback": {
+              "x": 8,
+              "y": 25,
+              "coordinateSpace": "reference-viewport-percent"
+            },
+            "bindingStatus": "bound"
+          }
+        },
+        {
+          "id": "task-list-note-2",
+          "title": "任务列表",
+          "scope": "module",
+          "moduleId": "tasks",
+          "content": "模块定义\n呈现任务信息与操作。\n\n展示内容\n任务标题、说明、成员代号、日期和进度；操作按页面提供查看、返回或完成。\n\n数据规则\n数据完全虚构，使用本地会话保存；关键词匹配标题并与进度筛选同时生效。\n\n交互逻辑\n点击标题传递任务 ID；标记完成更新会话；返回后保留查询条件。\n\n异常与状态\n加载中显示进度提示；无结果显示空态；错误允许重试；没有权限与过期场景。\n\n关联文档\ndocs/PRD.md",
+          "requirementRefs": [
+            "REQ-001",
+            "REQ-002",
+            "REQ-003",
+            "REQ-004"
+          ],
+          "covers": [
+            "section:tasks",
+            "action:open",
+            "state:normal",
+            "state:loading",
+            "state:empty",
+            "state:error"
+          ],
+          "anchor": {
+            "anchorId": "tasks",
+            "offset": {
+              "x": 8,
+              "y": 8
+            },
+            "fallback": {
+              "x": 8,
+              "y": 50,
+              "coordinateSpace": "reference-viewport-percent"
+            },
+            "bindingStatus": "bound"
+          }
+        }
+      ],
+      "states": [
+        {
+          "id": "normal",
+          "applicable": true,
+          "description": "展示任务内容"
+        },
+        {
+          "id": "loading",
+          "applicable": true,
+          "description": "正在加载任务"
+        },
+        {
+          "id": "empty",
+          "applicable": true,
+          "description": "没有匹配任务或任务不存在"
+        },
+        {
+          "id": "error",
+          "applicable": true,
+          "description": "加载失败，可重试"
+        },
+        {
+          "id": "forbidden",
+          "applicable": false,
+          "description": "本样例无权限模型"
+        },
+        {
+          "id": "expired",
+          "applicable": false,
+          "description": "本样例无过期业务"
+        }
+      ]
+    },
+    {
+      "id": "task-detail",
+      "title": "任务详情",
+      "module": "任务管理",
+      "path": "pages/task-detail.html",
+      "viewport": {
+        "kind": "web",
+        "width": 1280,
+        "height": 800
+      },
+      "specPath": "intermediate/page-specs/task-detail.json",
+      "markers": [
+        {
+          "id": "task-detail-note-1",
+          "title": "任务信息",
+          "scope": "module",
+          "moduleId": "detail",
+          "content": "模块定义\n呈现任务信息与操作。\n\n展示内容\n任务标题、说明、成员代号、日期和进度；操作按页面提供查看、返回或完成。\n\n数据规则\n数据完全虚构，使用本地会话保存；关键词匹配标题并与进度筛选同时生效。\n\n交互逻辑\n点击标题传递任务 ID；标记完成更新会话；返回后保留查询条件。\n\n异常与状态\n加载中显示进度提示；无结果显示空态；错误允许重试；没有权限与过期场景。\n\n关联文档\ndocs/PRD.md",
+          "requirementRefs": [
+            "REQ-001",
+            "REQ-002",
+            "REQ-003",
+            "REQ-004"
+          ],
+          "covers": [
+            "section:detail",
+            "field:task-data"
+          ],
+          "anchor": {
+            "anchorId": "detail",
+            "offset": {
+              "x": 8,
+              "y": 8
+            },
+            "fallback": {
+              "x": 8,
+              "y": 25,
+              "coordinateSpace": "reference-viewport-percent"
+            },
+            "bindingStatus": "bound"
+          }
+        },
+        {
+          "id": "task-detail-note-2",
+          "title": "任务操作",
+          "scope": "module",
+          "moduleId": "actions",
+          "content": "模块定义\n呈现任务信息与操作。\n\n展示内容\n任务标题、说明、成员代号、日期和进度；操作按页面提供查看、返回或完成。\n\n数据规则\n数据完全虚构，使用本地会话保存；关键词匹配标题并与进度筛选同时生效。\n\n交互逻辑\n点击标题传递任务 ID；标记完成更新会话；返回后保留查询条件。\n\n异常与状态\n加载中显示进度提示；无结果显示空态；错误允许重试；没有权限与过期场景。\n\n关联文档\ndocs/PRD.md",
+          "requirementRefs": [
+            "REQ-001",
+            "REQ-002",
+            "REQ-003",
+            "REQ-004"
+          ],
+          "covers": [
+            "section:actions",
+            "action:complete",
+            "action:back",
+            "state:normal",
+            "state:loading",
+            "state:empty",
+            "state:error"
+          ],
+          "anchor": {
+            "anchorId": "actions",
+            "offset": {
+              "x": 8,
+              "y": 8
+            },
+            "fallback": {
+              "x": 8,
+              "y": 50,
+              "coordinateSpace": "reference-viewport-percent"
+            },
+            "bindingStatus": "bound"
+          }
+        }
+      ],
+      "states": [
+        {
+          "id": "normal",
+          "applicable": true,
+          "description": "展示任务内容"
+        },
+        {
+          "id": "loading",
+          "applicable": true,
+          "description": "正在加载任务"
+        },
+        {
+          "id": "empty",
+          "applicable": true,
+          "description": "没有匹配任务或任务不存在"
+        },
+        {
+          "id": "error",
+          "applicable": true,
+          "description": "加载失败，可重试"
+        },
+        {
+          "id": "forbidden",
+          "applicable": false,
+          "description": "本样例无权限模型"
+        },
+        {
+          "id": "expired",
+          "applicable": false,
+          "description": "本样例无过期业务"
+        }
+      ]
+    }
+  ],
+  "navigation": [
+    {
+      "id": "tasks",
+      "type": "folder",
+      "title": "任务管理",
+      "children": [
+        {
+          "id": "nav-task-list",
+          "type": "page",
+          "pageId": "task-list",
+          "title": "任务列表"
+        },
+        {
+          "id": "nav-task-detail",
+          "type": "page",
+          "pageId": "task-detail",
+          "title": "任务详情"
+        }
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "open-task",
+      "from": "task-list",
+      "to": "task-detail",
+      "trigger": "点击任务标题",
+      "requirementRefs": [
+        "REQ-002"
+      ]
+    },
+    {
+      "id": "back-list",
+      "from": "task-detail",
+      "to": "task-list",
+      "trigger": "返回列表",
+      "requirementRefs": [
+        "REQ-002"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,96 @@
+{
+  "schemaVersion": "1.0",
+  "projectId": "task-board-demo",
+  "requirementsPath": "requirements.json",
+  "requirementsSha256": "3789780220e41656c27972acb2be15e0ec60553509df873cc786375680540aae",
+  "confirmation": {
+    "status": "confirmed",
+    "confirmedBy": "user",
+    "evidence": "FIXTURE ONLY：虚构案例的模拟确认，用于演示哈希链；不构成真实用户确认，不得复用于新项目。",
+    "confirmedAt": "2026-09-21"
+  },
+  "pages": [
+    {
+      "id": "task-list",
+      "title": "任务列表",
+      "module": "任务管理",
+      "kind": "web",
+      "requirementRefs": [
+        "REQ-001",
+        "REQ-002",
+        "REQ-003",
+        "REQ-004"
+      ],
+      "states": [
+        "normal",
+        "loading",
+        "empty",
+        "error"
+      ],
+      "implementationStatus": "built",
+      "reason": "虚构公开样例"
+    },
+    {
+      "id": "task-detail",
+      "title": "任务详情",
+      "module": "任务管理",
+      "kind": "web",
+      "requirementRefs": [
+        "REQ-001",
+        "REQ-002",
+        "REQ-003",
+        "REQ-004"
+      ],
+      "states": [
+        "normal",
+        "loading",
+        "empty",
+        "error"
+      ],
+      "implementationStatus": "built",
+      "reason": "虚构公开样例"
+    }
+  ],
+  "navigation": [
+    {
+      "id": "tasks",
+      "type": "folder",
+      "title": "任务管理",
+      "children": [
+        {
+          "id": "nav-task-list",
+          "type": "page",
+          "pageId": "task-list",
+          "title": "任务列表"
+        },
+        {
+          "id": "nav-task-detail",
+          "type": "page",
+          "pageId": "task-detail",
+          "title": "任务详情"
+        }
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "open-task",
+      "from": "task-list",
+      "to": "task-detail",
+      "trigger": "点击任务标题",
+      "requirementRefs": [
+        "REQ-002"
+      ]
+    },
+    {
+      "id": "back-list",
+      "from": "task-detail",
+      "to": "task-list",
+      "trigger": "返回列表",
+      "requirementRefs": [
+        "REQ-002"
+      ]
+    }
+  ],
+  "uncoveredRequirements": []
+}

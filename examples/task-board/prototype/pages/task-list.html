@@ -1,0 +1,8 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>任务列表</title><link rel="stylesheet" href="../assets/task-board.css"></head>
+<body data-page="task-list">
+<header class="topbar"><div class="wordmark"><img src="../assets/prototype-viewer/prototype-mark.svg" alt="">TASK / BOARD</div><span class="workspace">团队空间 / 任务管理</span></header>
+<main><div class="eyebrow">WORK IN PROGRESS</div><h1>让每一件事，有序向前。</h1><p class="intro">找到要处理的任务，专注下一步。</p>
+<section id="filters" class="filters" aria-label="任务筛选"><label>搜索任务<input id="keyword" type="search" placeholder="输入任务名称" autocomplete="off"></label><label>任务进度<select id="status"><option value="all">全部进度</option><option value="todo">待办</option><option value="doing">进行中</option><option value="done">已完成</option></select></label></section>
+<section id="tasks" class="list" aria-label="任务列表"><div class="list-heading"><span>任务名称</span><span>负责人</span><span>截止日期</span><span>进度</span></div><div id="task-rows"></div></section><p id="count" class="count" aria-live="polite"></p><p id="feedback" role="status"></p>
+<footer>TASK / BOARD · SMALL STEPS, CLEAR PROGRESS.</footer></main><script src="../assets/task-board.js"></script></body></html>

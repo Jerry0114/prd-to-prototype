@@ -1,0 +1,276 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://prototype.local/schemas/page-spec.schema.json",
+  "title": "单页原型规格",
+  "type": "object",
+  "required": ["schemaVersion", "projectId", "pageId", "title", "purpose", "requirementRefs", "viewport", "informationPriority", "sections", "fields", "actions", "states", "annotations", "designSystemRefs", "openQuestions"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "projectId": { "type": "string" },
+    "pageId": { "type": "string" },
+    "title": { "type": "string" },
+    "purpose": { "type": "string" },
+    "requirementRefs": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+    "viewport": {
+      "type": "object",
+      "required": ["kind", "width", "height"],
+      "properties": {
+        "kind": { "enum": ["web", "mobile"] },
+        "width": { "type": "integer", "minimum": 240 },
+        "height": { "type": "integer", "minimum": 320 }
+      },
+      "additionalProperties": false
+    },
+    "informationPriority": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+    "sections": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/section" } },
+    "fields": { "type": "array", "items": { "$ref": "#/$defs/field" } },
+    "actions": { "type": "array", "items": { "$ref": "#/$defs/action" } },
+    "states": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/state" } },
+    "annotations": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/annotation" } },
+    "handoff": { "$ref": "#/$defs/handoff" },
+    "designSystemRefs": { "type": "array", "items": { "type": "string" } },
+    "openQuestions": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          { "type": "string" },
+          { "$ref": "#/$defs/openQuestion" }
+        ]
+      }
+    }
+  },
+  "$defs": {
+    "section": {
+      "type": "object",
+      "required": ["id", "title", "component", "contentRule"],
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "component": { "type": "string" },
+        "contentRule": { "type": "string" },
+        "changeStatus": { "enum": ["new", "changed", "impacted", "unchanged"] },
+        "changeReason": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "field": {
+      "type": "object",
+      "required": ["id", "label", "dataRule", "requirementRefs"],
+      "properties": {
+        "id": { "type": "string" },
+        "label": { "type": "string" },
+        "dataRule": { "type": "string" },
+        "controlType": { "enum": ["text", "password", "number", "select", "multi-select", "checkbox", "radio", "date", "date-range", "display"] },
+        "options": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["value", "label"],
+            "properties": {
+              "value": { "type": ["string", "number", "boolean", "null"] },
+              "label": { "type": "string" },
+              "meaning": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "defaultValue": { "type": ["string", "number", "boolean", "null"] },
+        "dataSource": { "type": "string" },
+        "requirementRefs": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    },
+    "action": {
+      "type": "object",
+      "required": ["id", "label", "trigger", "result", "failure", "requirementRefs"],
+      "properties": {
+        "id": { "type": "string" },
+        "label": { "type": "string" },
+        "trigger": { "type": "string" },
+        "result": { "type": "string" },
+        "targetPageId": { "type": ["string", "null"] },
+        "failure": { "type": "string" },
+        "logic": { "type": "array", "items": { "type": "string" } },
+        "requirementRefs": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    },
+    "state": {
+      "type": "object",
+      "required": ["id", "applicable", "description"],
+      "properties": {
+        "id": { "enum": ["normal", "empty", "error", "forbidden", "loading", "expired"] },
+        "applicable": { "type": "boolean" },
+        "description": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "annotation": {
+      "type": "object",
+      "required": ["id", "title", "content", "requirementRefs", "anchor"],
+      "properties": {
+        "id": { "type": "string" },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "description": "被说明的页面对象名称，例如模块、区域、卡片、字段、按钮、提示或状态；不得写规则结论。"
+        },
+        "content": {
+          "type": "string",
+          "minLength": 1,
+          "description": "该对象的完整说明；需要区分定义、内容、数据、交互、状态、布局、合规或关联文档时，在同一字符串中用空行分段。"
+        },
+        "scope": { "enum": ["module", "page", "element"] },
+        "moduleId": { "type": "string" },
+        "requirementRefs": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+        "covers": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "pattern": "^(section|field|action|state):" }
+        },
+        "anchor": {
+          "type": "object",
+          "required": ["anchorId", "offset", "fallback", "bindingStatus"],
+          "properties": {
+            "anchorId": { "type": ["string", "null"] },
+            "previewTriggerId": { "type": ["string", "null"] },
+            "previewOffset": {
+              "type": "object",
+              "required": ["x", "y"],
+              "properties": { "x": { "type": "number" }, "y": { "type": "number" } },
+              "additionalProperties": false
+            },
+            "offset": {
+              "type": "object",
+              "required": ["x", "y"],
+              "properties": { "x": { "type": "number" }, "y": { "type": "number" } },
+              "additionalProperties": false
+            },
+            "fallback": {
+              "type": "object",
+              "required": ["x", "y", "coordinateSpace"],
+              "properties": {
+                "x": { "type": "number" },
+                "y": { "type": "number" },
+                "coordinateSpace": { "const": "reference-viewport-percent" }
+              },
+              "additionalProperties": false
+            },
+            "bindingStatus": { "enum": ["bound", "fallback-only"] }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "relatedDoc": {
+      "type": "object",
+      "required": ["label", "path"],
+      "properties": {
+        "label": { "type": "string" },
+        "path": { "type": "string" },
+        "section": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "overviewItem": {
+      "type": "object",
+      "required": ["label", "description"],
+      "properties": {
+        "label": { "type": "string" },
+        "description": { "type": "string" },
+        "requirementRefs": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    },
+    "pageOverview": {
+      "type": "object",
+      "required": ["roles", "entries", "exits", "preconditions"],
+      "properties": {
+        "roles": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/overviewItem" } },
+        "entries": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/overviewItem" } },
+        "exits": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/overviewItem" } },
+        "preconditions": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/overviewItem" } }
+      },
+      "additionalProperties": false
+    },
+    "statusTransition": {
+      "type": "object",
+      "required": ["id", "from", "trigger", "to", "rule", "requirementRefs"],
+      "properties": {
+        "id": { "type": "string" },
+        "from": { "type": "string" },
+        "trigger": { "type": "string" },
+        "to": { "type": "string" },
+        "rule": { "type": "string" },
+        "requirementRefs": { "type": "array", "minItems": 1, "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    },
+    "acceptanceCriterion": {
+      "type": "object",
+      "required": ["id", "title", "given", "when", "then", "requirementRefs"],
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "given": { "type": "string" },
+        "when": { "type": "string" },
+        "then": { "type": "string" },
+        "requirementRefs": { "type": "array", "minItems": 1, "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    },
+    "openQuestion": {
+      "type": "object",
+      "required": ["id", "question", "impact", "status"],
+      "properties": {
+        "id": { "type": "string" },
+        "question": { "type": "string" },
+        "impact": { "type": "string" },
+        "status": { "enum": ["open", "confirmed", "rejected"] },
+        "currentAssumption": { "type": "string" },
+        "requirementRefs": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    },
+    "handoff": {
+      "type": "object",
+      "required": ["version", "audience", "completenessTarget", "coverageDimensions", "relatedDocs"],
+      "properties": {
+        "version": { "enum": ["2.0", "2.1"] },
+        "audience": { "const": "frontend-development" },
+        "completenessTarget": { "const": "implement-without-opening-prd" },
+        "annotationPolicy": {
+          "type": "object",
+          "required": ["strategy", "moduleSource", "coverageScope", "requiredDimensions", "minimumApplicableDimensions"],
+          "properties": {
+            "strategy": { "const": "module-complete" },
+            "moduleSource": { "const": "sections" },
+            "coverageScope": { "enum": ["full-page", "change-impact"] },
+            "requiredDimensions": {
+              "type": "array",
+              "minItems": 1,
+              "items": { "enum": ["definition", "content", "data", "interaction", "state", "layout", "compliance"] },
+              "contains": { "const": "definition" },
+              "uniqueItems": true
+            },
+            "minimumApplicableDimensions": { "type": "integer", "minimum": 3 }
+          },
+          "additionalProperties": false
+        },
+        "coverageDimensions": {
+          "type": "array",
+          "minItems": 6,
+          "items": { "enum": ["fields", "options", "content", "actions", "states", "permissions", "data", "exceptions", "navigation", "roles", "preconditions", "acceptance"] },
+          "uniqueItems": true
+        },
+        "pageOverview": { "$ref": "#/$defs/pageOverview" },
+        "statusTransitions": { "type": "array", "items": { "$ref": "#/$defs/statusTransition" } },
+        "acceptanceCriteria": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/acceptanceCriterion" } },
+        "relatedDocs": { "type": "array", "items": { "$ref": "#/$defs/relatedDoc" } }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

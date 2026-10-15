@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-label="Prototype Studio">
+  <rect width="48" height="48" rx="12" fill="#1457d9"/>
+  <rect x="11" y="10" width="21" height="26" rx="3" fill="none" stroke="#fff" stroke-width="2.5"/>
+  <path d="M17 18h9M17 24h6" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="m29 28 10 6-6 2-2 6z" fill="#b4d4ff" stroke="#1457d9" stroke-width="1.5"/>
+</svg>

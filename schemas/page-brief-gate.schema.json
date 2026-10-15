@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://prototype.local/schemas/page-brief-gate.schema.json",
+  "title": "逐页定义确认关卡",
+  "type": "object",
+  "required": ["schemaVersion", "enabled", "status", "targetPageIds", "pageMapSha256", "documents"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "enabled": { "type": "boolean", "default": true },
+    "status": { "enum": ["draft", "needs-confirmation", "confirmed", "bypassed"] },
+    "targetPageIds": { "type": "array", "uniqueItems": true, "items": { "type": "string" } },
+    "pageMapSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "documents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["pageId", "title", "path", "origin", "openQuestionsResolved", "status", "confirmedBy", "confirmedAt", "confirmationEvidence", "sha256"],
+        "properties": {
+          "pageId": { "type": "string" },
+          "title": { "type": "string" },
+          "path": { "type": "string" },
+          "origin": { "enum": ["generated", "provided"] },
+          "openQuestionsResolved": { "type": "boolean" },
+          "status": { "enum": ["draft", "needs-confirmation", "confirmed"] },
+          "confirmedBy": { "enum": ["user", null] },
+          "confirmedAt": { "type": ["string", "null"] },
+          "confirmationEvidence": { "type": ["string", "null"] },
+          "sha256": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "bypass": {
+      "type": ["object", "null"],
+      "properties": {
+        "confirmedBy": { "const": "user" },
+        "confirmedAt": { "type": "string" },
+        "reason": { "type": "string" },
+        "evidence": { "type": "string" }
+      },
+      "required": ["confirmedBy", "confirmedAt", "reason", "evidence"],
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://prototype.local/schemas/manual-annotations.schema.json",
+  "title": "原型人工标注项目文件",
+  "type": "object",
+  "required": ["schemaVersion", "version", "projectId", "projectName", "updatedAt", "storage", "pages"],
+  "properties": {
+    "schemaVersion": { "const": "2.0" },
+    "version": { "const": 2 },
+    "projectId": { "type": "string", "minLength": 1 },
+    "projectName": { "type": "string", "minLength": 1 },
+    "updatedAt": { "type": ["string", "null"] },
+    "storage": {
+      "type": "object",
+      "required": ["kind", "path"],
+      "properties": {
+        "kind": { "const": "project-file" },
+        "path": { "const": "annotations/manual-annotations.json" }
+      },
+      "additionalProperties": false
+    },
+    "pages": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/pageRecord" }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "pageRecord": {
+      "type": "object",
+      "required": ["added", "updated", "deleted", "updatedAt", "current"],
+      "properties": {
+        "added": { "type": "array", "items": { "$ref": "#/$defs/editableMarker" } },
+        "updated": { "type": "object", "additionalProperties": { "$ref": "#/$defs/markerPatch" } },
+        "deleted": { "type": "array", "uniqueItems": true, "items": { "type": "string" } },
+        "updatedAt": { "type": ["string", "null"] },
+        "current": { "type": "array", "items": { "$ref": "#/$defs/currentMarker" } }
+      },
+      "additionalProperties": false
+    },
+    "anchor": {
+      "type": "object",
+      "required": ["bindingStatus"],
+      "properties": {
+        "anchorId": { "type": ["string", "null"] },
+        "previewTriggerId": { "type": ["string", "null"] },
+        "offset": { "type": "object" },
+        "previewOffset": { "type": "object" },
+        "fallback": { "type": "object" },
+        "bindingStatus": { "enum": ["bound", "fallback-only"] }
+      }
+    },
+    "editableMarker": {
+      "type": "object",
+      "required": ["id", "title", "content", "x", "y", "anchor"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "title": { "type": "string", "minLength": 1 },
+        "content": { "type": "string", "minLength": 1 },
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "anchor": { "$ref": "#/$defs/anchor" },
+        "createdAt": { "type": ["string", "null"] },
+        "editedAt": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "markerPatch": {
+      "type": "object",
+      "required": ["title", "content", "x", "y", "anchor"],
+      "properties": {
+        "title": { "type": "string", "minLength": 1 },
+        "content": { "type": "string", "minLength": 1 },
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "anchor": { "$ref": "#/$defs/anchor" },
+        "editedAt": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "currentMarker": {
+      "type": "object",
+      "required": ["id", "origin", "modified", "title", "content", "x", "y", "anchor", "createdAt", "editedAt"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "origin": { "enum": ["system", "manual"] },
+        "modified": { "type": "boolean" },
+        "title": { "type": "string", "minLength": 1 },
+        "content": { "type": "string", "minLength": 1 },
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "anchor": { "$ref": "#/$defs/anchor" },
+        "createdAt": { "type": ["string", "null"] },
+        "editedAt": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    }
+  }
+}

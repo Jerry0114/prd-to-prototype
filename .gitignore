@@ -1,0 +1,16 @@
+.DS_Store
+Thumbs.db
+node_modules/
+.env
+.env.*
+*.log
+*.zip
+*.tgz
+dist/
+output/
+coverage/
+playwright-report/
+test-results/
+**/annotations/manual-annotations.json
+**/intermediate/*report.md
+**/intermediate/*report.json
