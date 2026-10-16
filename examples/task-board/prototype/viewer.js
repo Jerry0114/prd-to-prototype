@@ -1,7 +1,11 @@
 const state = {
   manifest: null,
   mode: "page",
-  zoom: 1.25,
+  zoom: 1,
+  autoFit: true,
+  sidebarOpen: window.innerWidth > 720,
+  inspectorOpen: window.innerWidth > 980,
+  handoffTab: "overview",
   showMarkers: true,
   activePage: null,
   previewPath: null,
@@ -37,17 +41,106 @@ const els = {
   zoomValue: document.querySelector("#zoomValue"),
   zoomMenuButton: document.querySelector("#zoomMenuButton"),
   zoomMenu: document.querySelector("#zoomMenu"),
-  pageCount: document.querySelector("#pageCount"),
   template: document.querySelector("#pageNodeTemplate"),
   previewDialog: document.querySelector("#previewDialog"),
   previewViewport: document.querySelector("#previewViewport"),
   previewDevice: document.querySelector("#previewDevice"),
   previewFrame: document.querySelector("#previewFrame"),
   previewTitle: document.querySelector("#previewTitle"),
+  inspector: document.querySelector("#inspector"),
+  sidebar: document.querySelector("#sidebar"),
+  appShell: document.querySelector(".app-shell"),
+  shortcutsDialog: document.querySelector("#shortcutsDialog"),
+  advancedTools: document.querySelector("#advancedTools"),
+  moreTools: document.querySelector("#moreTools"),
+  moreToolsButton: document.querySelector("#moreToolsButton"),
 };
 
-const zoomLevels = [0.5, 0.8, 1, 1.25, 1.5];
+const zoomLevels = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2];
 const annotationStoreApi = window.PrototypeAnnotationStore;
+
+// Inspectors live outside the transformed canvas in page mode.
+function inspectorFor(node) {
+  return node._inspector || node.querySelector(".annotation-card");
+}
+
+function activeNode() {
+  return state.activePage && document.querySelector(`#node-${CSS.escape(state.activePage)}`);
+}
+
+function applyPanelState() {
+  els.appShell.classList.toggle("is-sidebar-hidden", !state.sidebarOpen);
+  els.appShell.classList.toggle("is-inspector-hidden", !state.inspectorOpen);
+  document.querySelector("#toggleSidebar").setAttribute("aria-expanded", String(state.sidebarOpen));
+  document.querySelector("#toggleInspector").setAttribute("aria-expanded", String(state.inspectorOpen));
+  document.querySelector("#toggleInspector").classList.toggle("is-active", state.inspectorOpen);
+  const drawerOpen = (window.innerWidth <= 720 && state.sidebarOpen) || (window.innerWidth <= 980 && state.inspectorOpen);
+  document.querySelector("#panelBackdrop").hidden = !drawerOpen;
+  requestAnimationFrame(() => state.autoFit && state.manifest ? fitCanvas(false) : updateSizer());
+}
+
+function positionTopPopover(panel, trigger, width) {
+  const rect = trigger.getBoundingClientRect();
+  panel.style.left = `${Math.max(12, Math.min(window.innerWidth - width - 12, rect.right - width))}px`;
+  panel.style.top = `${rect.bottom + 10}px`;
+}
+
+function syncTopTools() {
+  const compact = window.innerWidth <= 1000;
+  const target = document.querySelector(compact ? "#compactTools" : "#desktopTools");
+  if (els.advancedTools.parentElement !== target) {
+    setZoomMenu(false);
+    if (els.moreTools.matches(":popover-open")) els.moreTools.hidePopover();
+    target.appendChild(els.advancedTools);
+  }
+  els.moreToolsButton.hidden = !compact;
+}
+
+function togglePanel(panel, open) {
+  const panelElement = panel === "sidebar" ? els.sidebar : els.inspector;
+  const focusWasInside = panelElement?.contains(document.activeElement);
+  state[`${panel}Open`] = open ?? !state[`${panel}Open`];
+  if (state[`${panel}Open`] && window.innerWidth <= 720) {
+    state[panel === "sidebar" ? "inspectorOpen" : "sidebarOpen"] = false;
+  }
+  applyPanelState();
+  const isDrawer = window.innerWidth <= (panel === "sidebar" ? 720 : 980);
+  if (isDrawer && state[`${panel}Open`]) panelElement?.querySelector("button, input")?.focus();
+  else if (focusWasInside) document.querySelector(panel === "sidebar" ? "#toggleSidebar" : "#toggleInspector").focus();
+}
+
+let toastTimer;
+function notify(message) {
+  const toast = document.querySelector("#toast");
+  toast.textContent = message;
+  toast.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { toast.hidden = true; }, 3000);
+}
+
+function canLeaveEditor() {
+  if (!state.editingMarker) return true;
+  const node = activeNode();
+  const form = node && inspectorFor(node)?.querySelector(".annotation-edit-form");
+  const page = state.manifest?.pages.find(item => item.id === state.editingMarker.pageId);
+  const marker = page?.markers.find(item => item.id === state.editingMarker.markerId);
+  if (!form || !marker) return true;
+  const values = markerEditorValues(form);
+  if (!marker._draft && values.title === marker.title && values.content === marker.content) return true;
+  return window.confirm("当前标注尚未保存。放弃本次修改并继续？");
+}
+
+function updateWorkspaceContext() {
+  if (!state.manifest) return;
+  const page = state.manifest.pages.find(item => item.id === state.activePage);
+  const overview = state.mode === "overview";
+  document.querySelector("#activePageTitle").textContent = overview ? "项目流程总览" : page?.title || "未选择页面";
+  document.querySelector("#pagePosition").textContent = overview ? `${state.manifest.pages.length} 个页面` : `${state.manifest.pages.indexOf(page) + 1} / ${state.manifest.pages.length} 页`;
+  document.querySelector("#pageModeButton").classList.toggle("is-active", !overview);
+  document.querySelector("#pageModeButton").setAttribute("aria-pressed", String(!overview));
+  els.overviewNav.setAttribute("aria-pressed", String(overview));
+  document.querySelector("#canvasHint").textContent = state.placement ? "点击原型放置标注 · Esc 取消" : overview ? "选择页面查看详情" : "M 显隐标注 · 0 适应画布";
+}
 
 function annotationStorageKey(projectId) {
   return `prototype-viewer:annotations:v1:${encodeURIComponent(projectId)}`;
@@ -102,6 +195,7 @@ async function readAnnotationStore(project) {
 }
 
 function updateAnnotationStorageStatusElement(element) {
+  if (!element) return;
   const labels = {
     loading: "读取保存状态",
     saving: "正在保存到项目文件",
@@ -241,8 +335,6 @@ async function boot() {
   state.manifest = await normalizeManifest(rawManifest, pageMap);
   void writeAnnotationStore();
   renderNavigation();
-  els.pageCount.textContent = `${state.manifest.pages.length} 个页面`;
-  document.querySelector("#projectName").textContent = state.manifest.project.name;
   document.title = `${state.manifest.project.name} · 原型工作台`;
   const rawInitialView = window.location.hash.slice(1);
   let initialView = rawInitialView;
@@ -251,6 +343,8 @@ async function boot() {
   } catch {
     // 编码异常时保留原值，并按默认页面兜底。
   }
+  syncTopTools();
+  applyPanelState();
   if (initialView === "overview") renderOverview();
   else renderPageCanvas(state.manifest.pages.some((page) => page.id === initialView) ? initialView : state.manifest.startPageId, false);
 }
@@ -324,9 +418,8 @@ function previewMetrics(viewport = {}) {
   const width = Number(viewport.width) || 1440;
   const height = Number(viewport.height) || 900;
   const kind = resolveViewportKind(viewport);
-  const pageScale = kind === "mobile"
-    ? Math.min(1, 390 / width, 844 / height)
-    : Math.min(880 / width, 550 / height);
+  // 100% means one canvas CSS pixel per declared viewport pixel.
+  const pageScale = 1;
   const overviewScale = kind === "mobile"
     ? Math.min(220 / width, 478 / height)
     : Math.min(500 / width, 313 / height);
@@ -370,13 +463,13 @@ function escapeHtml(value) {
 function renderOverviewGroup(title, items, emptyText) {
   const normalizedItems = Array.isArray(items) ? items : [];
   const content = normalizedItems.length
-    ? normalizedItems.map((item) => `<div class="handoff-row"><strong>${escapeHtml(item.label)}</strong><p>${escapeHtml(item.description)}</p></div>`).join("")
+    ? normalizedItems.map((item) => `<div class="handoff-row"><strong>${escapeHtml(item.label)}</strong>${item.description && item.description !== item.label ? `<p>${escapeHtml(item.description)}</p>` : ""}</div>`).join("")
     : `<p class="handoff-empty">${escapeHtml(emptyText)}</p>`;
   return `<section class="handoff-section"><h3>${escapeHtml(title)}</h3><div class="handoff-rows">${content}</div></section>`;
 }
 
 function renderOverviewPanel(node, page) {
-  const panel = node.querySelector('[data-handoff-panel="overview"]');
+  const panel = inspectorFor(node).querySelector('[data-handoff-panel="overview"]');
   const spec = page.spec;
   if (!spec) {
     panel.innerHTML = '<div class="annotation-empty">页面规格加载失败，暂时无法展示页面概要</div>';
@@ -396,7 +489,7 @@ function renderOverviewPanel(node, page) {
 }
 
 function renderStatesPanel(node, page) {
-  const panel = node.querySelector('[data-handoff-panel="states"]');
+  const panel = inspectorFor(node).querySelector('[data-handoff-panel="states"]');
   const spec = page.spec;
   if (!spec) {
     panel.innerHTML = '<div class="annotation-empty">页面规格加载失败，暂时无法展示页面状态</div>';
@@ -456,7 +549,7 @@ function renderQuestion(question, index) {
 }
 
 function renderDeliveryPanel(node, page) {
-  const panel = node.querySelector('[data-handoff-panel="delivery"]');
+  const panel = inspectorFor(node).querySelector('[data-handoff-panel="delivery"]');
   const spec = page.spec;
   if (!spec) {
     panel.innerHTML = '<div class="annotation-empty">页面规格加载失败，暂时无法展示交付检查</div>';
@@ -504,19 +597,36 @@ function renderDeliveryPanel(node, page) {
 }
 
 function setHandoffTab(node, tabName) {
-  node.querySelectorAll("[data-handoff-tab]").forEach((button) => {
+  if (state.mode === "page") state.handoffTab = tabName;
+  inspectorFor(node).querySelectorAll("[data-handoff-tab]").forEach((button) => {
     const active = button.dataset.handoffTab === tabName;
     button.classList.toggle("is-active", active);
     button.setAttribute("aria-selected", String(active));
+    button.tabIndex = active ? 0 : -1;
   });
-  node.querySelectorAll("[data-handoff-panel]").forEach((panel) => {
+  inspectorFor(node).querySelectorAll("[data-handoff-panel]").forEach((panel) => {
     panel.classList.toggle("is-active", panel.dataset.handoffPanel === tabName);
   });
 }
 
 function bindHandoffTabs(node) {
-  node.querySelectorAll("[data-handoff-tab]").forEach((button) => {
+  const buttons = [...inspectorFor(node).querySelectorAll("[data-handoff-tab]")];
+  buttons.forEach((button, index) => {
+    const name = button.dataset.handoffTab;
+    button.id = `tab-${node.id}-${name}`;
+    button.setAttribute("aria-controls", `panel-${node.id}-${name}`);
+    const panel = inspectorFor(node).querySelector(`[data-handoff-panel="${name}"]`);
+    panel.id = `panel-${node.id}-${name}`;
+    panel.setAttribute("aria-labelledby", button.id);
     button.addEventListener("click", () => setHandoffTab(node, button.dataset.handoffTab));
+    button.addEventListener("keydown", event => {
+      if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const target = event.key === "Home" ? 0 : event.key === "End" ? buttons.length - 1 : (index + (event.key === "ArrowRight" ? 1 : -1) + buttons.length) % buttons.length;
+      setHandoffTab(node, buttons[target].dataset.handoffTab);
+      buttons[target].focus();
+    });
   });
 }
 
@@ -526,7 +636,7 @@ function renderHandoff(node, page) {
   renderDeliveryPanel(node, page);
   renderMarkers(node, page);
   bindHandoffTabs(node);
-  setHandoffTab(node, "overview");
+  setHandoffTab(node, state.handoffTab);
 }
 
 async function hydratePage(page) {
@@ -644,7 +754,8 @@ function renderNavigationNode(node, depth, forceExpanded) {
     folder.type = "button";
     folder.className = "nav-folder";
     folder.setAttribute("aria-expanded", String(expanded));
-    folder.innerHTML = `<span class="nav-chevron" aria-hidden="true"></span><span class="nav-folder-icon" aria-hidden="true"></span><span class="nav-folder-title">${node.title}</span>`;
+    folder.innerHTML = `<span class="nav-chevron" aria-hidden="true"></span><svg class="icon" aria-hidden="true"><use href="#icon-folder"/></svg><span class="nav-folder-title">${escapeHtml(node.title)}</span>`;
+    folder.title = node.title;
     folder.addEventListener("click", () => toggleNavigationNode(nodeId));
     branch.appendChild(folder);
   } else {
@@ -656,7 +767,8 @@ function renderNavigationNode(node, depth, forceExpanded) {
     button.type = "button";
     button.className = "nav-item";
     button.dataset.page = page.id;
-    button.innerHTML = `<span class="nav-dot" aria-hidden="true"></span><span class="nav-title">${page.title}</span>`;
+    button.innerHTML = `<svg class="icon" aria-hidden="true"><use href="#icon-page"/></svg><span class="nav-title">${escapeHtml(page.title)}</span>`;
+    button.title = `${page.title} · ${resolveViewportKind(page.viewport || state.manifest.project.viewport) === "mobile" ? "App" : "Web"}`;
     button.addEventListener("click", () => renderPageCanvas(page.id));
     row.appendChild(button);
     if (hasChildren) {
@@ -725,6 +837,7 @@ function createPageNode(page, pageNumber = 1, params = {}, restoreY = 0) {
   node.querySelector(".node-index").textContent = `P${String(pageNumber).padStart(2, "0")}`;
   node.querySelector(".node-title").textContent = page.title;
   node.querySelector(".node-module").textContent = page.module;
+  node.querySelector(".close-inspector").addEventListener("click", () => togglePanel("inspector", false));
   const frame = node.querySelector("iframe");
   frame.src = versionedPagePath(page.path, params);
   frame.title = `${page.title}缩略预览`;
@@ -734,27 +847,6 @@ function createPageNode(page, pageNumber = 1, params = {}, restoreY = 0) {
   frame.addEventListener("load", () => {
     if (!restoreY) return;
     frame.contentWindow?.postMessage({ type: "prototype:restoreScroll", scrollY: restoreY }, "*");
-  });
-  const declaredStates = page.spec?.states;
-  if (Array.isArray(declaredStates) && declaredStates.length) {
-    const stateHost = node.querySelector(".state-button")?.parentElement;
-    const labels = { normal: "正常", loading: "加载中", empty: "空态", error: "失败", forbidden: "无权限", expired: "已失效" };
-    if (stateHost) {
-      const previousButtons = [...stateHost.querySelectorAll(".state-button")];
-      const firstButton = previousButtons[0];
-      declaredStates.filter(item => item.applicable && labels[item.id]).forEach(item => {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className = `state-button${item.id === "normal" ? " is-active" : ""}`;
-        button.dataset.state = item.id;
-        button.textContent = labels[item.id];
-        stateHost.insertBefore(button, firstButton);
-      });
-      previousButtons.forEach(button => button.remove());
-    }
-  }
-  node.querySelectorAll(".state-button").forEach((button) => {
-    button.addEventListener("click", () => setPageState(node, button.dataset.state));
   });
   node.querySelector(".run-button").addEventListener("click", () => openPreview(page));
   node.querySelector(".screen-frame").addEventListener("dblclick", () => openPreview(page));
@@ -775,7 +867,8 @@ function resetAnnotationInteraction() {
 function renderPageCanvas(pageId, animate = true, params = {}, restoreY = 0) {
   const page = state.manifest.pages.find((item) => item.id === pageId);
   if (!page) return;
-  if (state.activePage !== pageId) resetAnnotationInteraction();
+  if (state.editingMarker && !canLeaveEditor()) return;
+  resetAnnotationInteraction();
   state.mode = "page";
   state.activePage = pageId;
   state.routeParams = { ...params };
@@ -789,19 +882,26 @@ function renderPageCanvas(pageId, animate = true, params = {}, restoreY = 0) {
   els.connections.innerHTML = "";
   const row = document.createElement("div");
   row.className = "rank-row";
-  row.appendChild(createPageNode(page, state.manifest.pages.indexOf(page) + 1, params, restoreY));
+  const node = createPageNode(page, state.manifest.pages.indexOf(page) + 1, params, restoreY);
+  node._inspector = node.querySelector(".annotation-card");
+  els.inspector.replaceChildren(node._inspector);
+  row.appendChild(node);
   els.flow.appendChild(row);
+  if (window.innerWidth <= 720) { state.sidebarOpen = false; applyPanelState(); }
   syncNavigation();
   requestAnimationFrame(() => {
-    setZoom(1.25);
+    if (state.autoFit) fitCanvas(false);
+    else setZoom(state.zoom);
     els.workspace.scrollTo({ left: 0, top: 0, behavior: animate ? "smooth" : "auto" });
     setActive(pageId);
   });
 }
 
 function renderOverview() {
+  if (!state.manifest || !canLeaveEditor()) return;
   resetAnnotationInteraction();
   state.mode = "overview";
+  els.inspector.innerHTML = '<div class="inspector-empty"><svg class="icon" aria-hidden="true"><use href="#icon-flow"/></svg><strong>查看完整页面流程</strong><p>选择任一页面，查看概要、标注与交付说明。</p></div>';
   history.replaceState(null, "", "#overview");
   els.canvas.className = "canvas is-overview-canvas";
   els.flow.className = "flow is-overview-mode";
@@ -815,6 +915,12 @@ function renderOverview() {
     state.manifest.pages.filter((page) => page.rank === rank).forEach((page) => {
       pageNumber += 1;
       const node = createPageNode(page, pageNumber);
+      node.setAttribute("tabindex", "0");
+      node.setAttribute("role", "button");
+      node.setAttribute("aria-label", `打开${page.title}页面说明`);
+      node.addEventListener("keydown", event => {
+        if (event.target === node && ["Enter", " "].includes(event.key)) { event.preventDefault(); renderPageCanvas(page.id); }
+      });
       node.addEventListener("click", (event) => {
         if (!event.target.closest("button") && !event.target.closest("iframe")) renderPageCanvas(page.id);
       });
@@ -825,7 +931,7 @@ function renderOverview() {
   syncNavigation();
   requestAnimationFrame(() => {
     drawConnections();
-    fitCanvas();
+    fitCanvas(false);
   });
 }
 
@@ -842,11 +948,16 @@ function markerSource(marker) {
 }
 
 function beginMarkerEdit(node, page, markerId, isNew = false) {
+  if (state.editingMarker && state.editingMarker.markerId !== markerId) {
+    if (!canLeaveEditor()) return;
+    resetAnnotationInteraction();
+  }
   state.placement = null;
   state.editingMarker = { pageId: page.id, markerId, isNew };
   setHandoffTab(node, "annotations");
   rerenderMarkers(node, page);
-  node.querySelector(`.annotation-editor[data-marker="${CSS.escape(markerId)}"] input[name="title"]`)?.focus();
+  togglePanel("inspector", true);
+  inspectorFor(node).querySelector(`.annotation-editor[data-marker="${CSS.escape(markerId)}"] input[name="title"]`)?.focus();
 }
 
 function cancelMarkerEdit(node, page, marker) {
@@ -928,6 +1039,7 @@ function renderMarkerEditor(node, page, marker, number) {
       returnToEditor: true,
       editorValues: markerEditorValues(form),
     };
+    if (window.innerWidth <= 980) togglePanel("inspector", false);
     rerenderMarkers(node, page);
   });
   return item;
@@ -938,9 +1050,7 @@ function renderMarkerItem(node, page, marker, number) {
   const item = document.createElement("div");
   item.className = "annotation-item";
   item.dataset.marker = marker.id;
-  item.tabIndex = 0;
-  item.setAttribute("role", "button");
-  item.setAttribute("aria-label", `查看标注 ${number}：${marker.title}`);
+  const descriptionId = `${node.id}-annotation-${marker.id}`;
   const restoreButton = marker.origin === "system" && marker.modified
     ? `<button type="button" data-marker-action="restore" title="恢复系统备注" aria-label="恢复系统备注">↺</button>`
     : "";
@@ -948,7 +1058,7 @@ function renderMarkerItem(node, page, marker, number) {
     <span class="annotation-number">${number}</span>
     <span class="annotation-content">
       <span class="annotation-title-row">
-        <strong>${escapeHtml(marker.title)}</strong>
+        <button type="button" class="annotation-disclosure" aria-expanded="false" aria-controls="${escapeHtml(descriptionId)}" title="展开标注"><strong>${escapeHtml(marker.title)}</strong><svg class="annotation-chevron" viewBox="0 0 16 16" aria-hidden="true"><path d="m4 6 4 4 4-4"/></svg></button>
         <span class="annotation-item-actions">
           <em class="annotation-source ${source.className}">${source.label}</em>
           ${restoreButton}
@@ -956,19 +1066,17 @@ function renderMarkerItem(node, page, marker, number) {
           <button type="button" data-marker-action="delete" title="删除标注" aria-label="删除标注">×</button>
         </span>
       </span>
-      <span class="annotation-description">${escapeHtml(marker.content)}</span>
+      <span id="${escapeHtml(descriptionId)}" class="annotation-description" hidden>${escapeHtml(marker.content)}</span>
     </span>`;
   item.addEventListener("click", (event) => {
     const action = event.target.closest("[data-marker-action]")?.dataset.markerAction;
     if (action === "edit") beginMarkerEdit(node, page, marker.id);
     else if (action === "delete") deleteMarker(node, page, marker);
     else if (action === "restore") restoreSystemMarker(node, page, marker);
-    else if (!event.target.closest("a")) activateMarker(node, marker.id, false);
-  });
-  item.addEventListener("keydown", (event) => {
-    if ((event.key === "Enter" || event.key === " ") && !event.target.closest("button, a, input, textarea")) {
-      event.preventDefault();
-      activateMarker(node, marker.id, false);
+    else if (!event.target.closest("a") && (event.target.closest(".annotation-disclosure") || !event.detail || !window.getSelection()?.toString())) {
+      const expanded = !item.classList.contains("is-active");
+      activateMarker(node, expanded ? marker.id : null, false);
+      if (expanded) focusMarker(node, marker);
     }
   });
   return item;
@@ -1019,6 +1127,7 @@ function placeMarker(node, page, screen, event) {
       ? { pageId: page.id, markerId: marker.id, isNew: Boolean(marker._draft), values: placement.editorValues }
       : null;
     rerenderMarkers(node, page);
+    togglePanel("inspector", true);
     activateMarker(node, marker.id, true);
     return;
   }
@@ -1044,7 +1153,8 @@ function placeMarker(node, page, screen, event) {
   state.editingMarker = { pageId: page.id, markerId: marker.id, isNew: true };
   setHandoffTab(node, "annotations");
   rerenderMarkers(node, page);
-  node.querySelector(`.annotation-editor[data-marker="${CSS.escape(marker.id)}"] input[name="title"]`)?.focus();
+  togglePanel("inspector", true);
+  inspectorFor(node).querySelector(`.annotation-editor[data-marker="${CSS.escape(marker.id)}"] input[name="title"]`)?.focus();
 }
 
 function renderMarkers(node, page) {
@@ -1054,14 +1164,16 @@ function renderMarkers(node, page) {
   screen.querySelector(".marker-placement-layer")?.remove();
   const layer = document.createElement("div");
   layer.className = "marker-layer";
-  const list = node.querySelector(".annotation-list");
-  updateAnnotationStorageStatusElement(node.querySelector(".annotation-storage-status"));
+  const inspector = inspectorFor(node);
+  const list = inspector.querySelector(".annotation-list");
+  updateAnnotationStorageStatusElement(inspector.querySelector(".annotation-storage-status"));
   list.innerHTML = "";
-  const markerToggle = node.querySelector(".marker-toggle input");
-  const addButton = node.querySelector(".annotation-add-button");
+  const markerToggle = inspector.querySelector(".marker-toggle input");
+  const addButton = inspector.querySelector(".annotation-add-button");
   const placementActive = state.placement?.pageId === page.id;
   const editingActive = state.editingMarker?.pageId === page.id;
-  node.querySelector(".annotation-count").textContent = `${markers.length} 项`;
+  inspector.querySelector(".annotation-count").textContent = `${markers.length} 条标注`;
+  inspector.querySelector(".tab-marker-count").textContent = markers.length;
   markerToggle.checked = state.showMarkers;
   markerToggle.onchange = () => setMarkerVisibility(markerToggle.checked);
   addButton.classList.toggle("is-active", placementActive && !state.placement.markerId);
@@ -1072,6 +1184,7 @@ function renderMarkers(node, page) {
     state.placement = placementActive ? null : { pageId: page.id, markerId: null };
     state.editingMarker = null;
     setMarkerVisibility(true);
+    if (window.innerWidth <= 980 && state.placement) togglePanel("inspector", false);
     rerenderMarkers(node, page);
   };
   node.classList.toggle("markers-hidden", !state.showMarkers);
@@ -1097,6 +1210,7 @@ function renderMarkers(node, page) {
     point.textContent = number;
     point.setAttribute("aria-label", `标注 ${number}：${marker.title}`);
     point.addEventListener("click", () => {
+      togglePanel("inspector", true);
       setHandoffTab(node, "annotations");
       activateMarker(node, marker.id, true);
     });
@@ -1122,8 +1236,11 @@ function renderMarkers(node, page) {
   } else if (editingActive) {
     activateMarker(node, state.editingMarker.markerId, false);
   } else {
-    activateMarker(node, markers[0].id, false);
+    const previous = node._activeMarkerId;
+    const next = previous === null ? null : markers.some(marker => marker.id === previous) ? previous : markers[0].id;
+    activateMarker(node, next, false);
   }
+  if (state.mode === "page") updateWorkspaceContext();
 }
 
 function syncMarkerViewport(node, scrollX = 0, scrollY = 0) {
@@ -1300,25 +1417,35 @@ function bindMarkerViewport(node, frame) {
 }
 
 function activateMarker(node, markerId, scrollList) {
+  node._activeMarkerId = markerId;
   node.querySelectorAll(".annotation-marker").forEach((element) => element.classList.toggle("is-active", element.dataset.marker === markerId));
-  node.querySelectorAll(".annotation-item").forEach((element) => {
+  inspectorFor(node).querySelectorAll(".annotation-item").forEach((element) => {
     const active = element.dataset.marker === markerId;
     element.classList.toggle("is-active", active);
+    const disclosure = element.querySelector(".annotation-disclosure");
+    if (disclosure) {
+      disclosure.setAttribute("aria-expanded", String(active));
+      disclosure.title = active ? "收起标注" : "展开标注";
+      element.querySelector(".annotation-description").hidden = !active;
+    }
     if (active && scrollList) element.scrollIntoView({ block: "nearest", behavior: "smooth" });
   });
+}
+
+function focusMarker(node, marker) {
+  try {
+    const frame = node.querySelector("iframe");
+    const anchor = marker.anchor?.anchorId && frame.contentDocument.getElementById(marker.anchor.anchorId);
+    if (anchor) anchor.scrollIntoView({ block: "center", behavior: "auto" });
+    else frame.contentWindow.scrollTo({ top: Number(marker.y) / 100 * Number(node.dataset.viewportHeight), behavior: "auto" });
+    requestAnimationFrame(() => syncMarkerBinding(node, frame));
+  } catch { /* Cross-origin prototypes still highlight the annotation and fallback marker. */ }
 }
 
 function setMarkerVisibility(visible) {
   state.showMarkers = visible;
   document.querySelectorAll(".page-node").forEach((node) => node.classList.toggle("markers-hidden", !visible));
   document.querySelectorAll(".marker-toggle input").forEach((input) => { input.checked = visible; });
-}
-
-function setPageState(node, nextState) {
-  node.querySelectorAll(".state-button").forEach((button) => button.classList.toggle("is-active", button.dataset.state === nextState));
-  const iframe = node.querySelector("iframe");
-  iframe.contentWindow?.postMessage({ type: "prototype:setState", state: nextState }, "*");
-  iframe.contentWindow?.postMessage({ type: "prototype:set-state", state: nextState }, "*");
 }
 
 function setActive(pageId) {
@@ -1335,6 +1462,7 @@ function syncNavigation() {
     else item.removeAttribute("aria-current");
   });
   els.overviewNav.classList.toggle("is-active", state.mode === "overview");
+  updateWorkspaceContext();
 }
 
 function configurePreview(page, params = {}, restoreY = 0) {
@@ -1350,16 +1478,35 @@ function configurePreview(page, params = {}, restoreY = 0) {
   els.previewDevice.style.setProperty("--preview-viewport-width", `${metrics.width}px`);
   els.previewDevice.style.setProperty("--preview-viewport-height", `${metrics.height}px`);
   els.previewFrame.src = state.previewPath;
+  requestAnimationFrame(fitPreviewDevice);
   els.previewFrame.addEventListener("load", () => {
     if (!restoreY) return;
     els.previewFrame.contentWindow?.postMessage({ type: "prototype:restoreScroll", scrollY: restoreY }, "*");
   }, { once: true });
 }
 
+function fitPreviewDevice() {
+  const mobile = els.previewDialog.classList.contains("is-mobile-preview");
+  const width = Number.parseFloat(els.previewDevice.style.getPropertyValue("--preview-viewport-width")) || 390;
+  const height = Number.parseFloat(els.previewDevice.style.getPropertyValue("--preview-viewport-height")) || 844;
+  const padding = window.innerWidth <= 720 ? 24 : 48;
+  els.previewDevice.style.zoom = mobile ? Math.min(1,
+    Math.max(160, els.previewViewport.clientWidth - padding) / (width + 18),
+    Math.max(160, els.previewViewport.clientHeight - padding) / (height + 18)) : 1;
+}
+
 function openPreview(page) {
+  if (!page || !canLeaveEditor()) return;
+  if (state.editingMarker) {
+    resetAnnotationInteraction();
+    const node = activeNode();
+    if (node) rerenderMarkers(node, page);
+  }
   state.routeStack = [];
-  configurePreview(page, {});
+  configurePreview(page, state.mode === "page" ? state.routeParams : {}, state.activeScrollY);
   els.previewDialog.showModal();
+  fitPreviewDevice();
+  requestAnimationFrame(fitPreviewDevice);
 }
 
 function routeTo(page, params = {}, sourceScrollY = 0) {
@@ -1387,10 +1534,13 @@ function routeBack(fallbackPageId) {
   else renderPageCanvas(page.id, true, params, scrollY);
 }
 
-function setZoom(nextZoom) {
-  state.zoom = Math.min(1.5, Math.max(0.5, nextZoom));
+function setZoom(nextZoom, autoFit = false) {
+  state.autoFit = autoFit;
+  state.zoom = Math.min(2, Math.max(0.1, nextZoom));
   els.canvas.style.transform = `scale(${state.zoom})`;
   els.zoomValue.textContent = `${Math.round(state.zoom * 100)}%`;
+  document.querySelector("#fitButton").classList.toggle("is-active", state.autoFit);
+  document.querySelector("#fitButton").setAttribute("aria-pressed", String(state.autoFit));
   document.querySelectorAll("[data-zoom-level]").forEach((button) => {
     button.classList.toggle("is-active", Math.abs(Number(button.dataset.zoomLevel) - state.zoom) < 0.005);
   });
@@ -1405,26 +1555,31 @@ function stepZoom(direction) {
 }
 
 function setZoomMenu(open) {
+  if (!open && els.zoomMenu.matches(":popover-open")) els.zoomMenu.hidePopover();
   els.zoomMenu.hidden = !open;
   els.zoomMenuButton.setAttribute("aria-expanded", String(open));
   els.zoomMenuButton.classList.toggle("is-open", open);
+  if (open) {
+    positionTopPopover(els.zoomMenu, els.zoomMenuButton, 124);
+    els.zoomMenu.showPopover();
+  }
 }
 
 function updateSizer() {
   const rawWidth = els.canvas.scrollWidth;
   const rawHeight = els.canvas.scrollHeight;
+  els.canvas.style.left = `${Math.max(0, (els.workspace.clientWidth - rawWidth * state.zoom) / 2)}px`;
+  els.canvas.style.top = `${Math.max(0, (els.workspace.clientHeight - rawHeight * state.zoom) / 2)}px`;
   els.canvasSizer.style.width = `${Math.max(els.workspace.clientWidth, rawWidth * state.zoom)}px`;
   els.canvasSizer.style.height = `${Math.max(els.workspace.clientHeight, rawHeight * state.zoom)}px`;
 }
 
 function fitCanvas(animate = true) {
-  const activePage = state.manifest.pages.find((page) => page.id === state.activePage);
-  const isMobilePage = state.mode === "page" && resolveViewportKind(activePage?.viewport || state.manifest.project.viewport) === "mobile";
-  const gutter = isMobilePage ? 32 : 72;
-  const widthZoom = (els.workspace.clientWidth - gutter) / els.canvas.scrollWidth;
-  const heightZoom = (els.workspace.clientHeight - gutter) / els.canvas.scrollHeight;
-  const limit = state.mode === "page" ? 1 : 0.62;
-  setZoom(Math.min(limit, widthZoom, heightZoom));
+  if (!els.canvas.scrollWidth || !state.manifest) return;
+  const widthZoom = Math.max(80, els.workspace.clientWidth - 24) / els.canvas.scrollWidth;
+  const heightZoom = Math.max(80, els.workspace.clientHeight - 24) / els.canvas.scrollHeight;
+  const limit = state.mode === "page" ? 1 : 0.8;
+  setZoom(Math.min(limit, widthZoom, heightZoom), true);
   els.workspace.scrollTo({ left: 0, top: 0, behavior: animate ? "smooth" : "auto" });
 }
 
@@ -1445,21 +1600,35 @@ function drawConnections() {
   const width = els.canvas.scrollWidth;
   const height = els.canvas.scrollHeight;
   els.connections.setAttribute("viewBox", `0 0 ${width} ${height}`);
-  els.connections.innerHTML = "";
+  els.connections.innerHTML = '<defs><marker id="connection-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M1 1 9 5 1 9" fill="none" stroke="#7986d4" stroke-width="1.5"/></marker></defs>';
   state.manifest.connections.forEach((connection) => {
     const from = document.querySelector(`#node-${CSS.escape(connection.from)}`);
     const to = document.querySelector(`#node-${CSS.escape(connection.to)}`);
     if (!from || !to) return;
     const fromPos = offsetWithin(from, els.canvas);
     const toPos = offsetWithin(to, els.canvas);
-    const x1 = fromPos.left + from.offsetWidth / 2;
-    const y1 = fromPos.top + from.offsetHeight;
-    const x2 = toPos.left + to.offsetWidth / 2;
-    const y2 = toPos.top;
+    const downward = toPos.top >= fromPos.top;
+    const bidirectional = state.manifest.connections.some(other => other.from === connection.to && other.to === connection.from);
+    const lane = bidirectional ? (downward ? -90 : 90) : 0;
+    let x1 = fromPos.left + from.offsetWidth / 2 + lane;
+    let y1 = fromPos.top + (downward ? from.offsetHeight : 0);
+    let x2 = toPos.left + to.offsetWidth / 2 + lane;
+    let y2 = toPos.top + (downward ? 0 : to.offsetHeight);
+    const horizontal = Math.abs(toPos.top - fromPos.top) < 8;
+    if (horizontal) {
+      const rightward = toPos.left >= fromPos.left;
+      x1 = fromPos.left + (rightward ? from.offsetWidth : 0);
+      x2 = toPos.left + (rightward ? 0 : to.offsetWidth);
+      y1 = fromPos.top + from.offsetHeight / 2 + lane;
+      y2 = toPos.top + to.offsetHeight / 2 + lane;
+    }
     const middle = y1 + (y2 - y1) * 0.5;
     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
     path.setAttribute("class", "connection-path");
-    path.setAttribute("d", `M ${x1} ${y1} C ${x1} ${middle}, ${x2} ${middle}, ${x2} ${y2}`);
+    path.setAttribute("marker-end", "url(#connection-arrow)");
+    path.setAttribute("d", horizontal
+      ? `M ${x1} ${y1} C ${(x1 + x2) / 2} ${y1}, ${(x1 + x2) / 2} ${y2}, ${x2} ${y2}`
+      : `M ${x1} ${y1} C ${x1} ${middle}, ${x2} ${middle}, ${x2} ${y2}`);
     els.connections.appendChild(path);
     const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
     dot.setAttribute("class", "connection-dot");
@@ -1472,7 +1641,7 @@ function drawConnections() {
     const labelWidth = Math.max(90, connection.label.length * 12 + 22);
     const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
     group.setAttribute("class", "connection-label");
-    group.innerHTML = `<rect x="${labelX - labelWidth / 2}" y="${labelY - 13}" width="${labelWidth}" height="26"></rect><text x="${labelX}" y="${labelY + 1}">${connection.label}</text>`;
+    group.innerHTML = `<rect x="${labelX - labelWidth / 2}" y="${labelY - 13}" width="${labelWidth}" height="26" rx="4"></rect><text x="${labelX}" y="${labelY + 1}">${escapeHtml(connection.label)}</text>`;
     els.connections.appendChild(group);
   });
 }
@@ -1486,17 +1655,56 @@ els.zoomMenu.querySelectorAll("[data-zoom-level]").forEach((button) => {
     setZoomMenu(false);
   });
 });
-document.querySelector("#fitButton").addEventListener("click", fitCanvas);
-document.querySelector("#resetButton").addEventListener("click", () => state.mode === "overview" ? renderOverview() : renderPageCanvas(state.activePage || state.manifest.startPageId));
+document.querySelector("#fitButton").addEventListener("click", () => fitCanvas());
 els.overviewNav.addEventListener("click", renderOverview);
+document.querySelector("#pageModeButton").addEventListener("click", () => renderPageCanvas(state.activePage || state.manifest?.startPageId));
+document.querySelector("#toggleSidebar").addEventListener("click", () => togglePanel("sidebar"));
+document.querySelector("#closeSidebar").addEventListener("click", () => togglePanel("sidebar", false));
+document.querySelector("#toggleInspector").addEventListener("click", () => togglePanel("inspector"));
+document.querySelector("#panelBackdrop").addEventListener("click", () => {
+  if (window.innerWidth <= 720) state.sidebarOpen = false;
+  state.inspectorOpen = false;
+  applyPanelState();
+});
+document.querySelector("#runPrototypeButton").addEventListener("click", () => openPreview(state.manifest?.pages.find(page => page.id === (state.mode === "overview" ? state.manifest.startPageId : state.activePage)) || state.manifest?.pages[0]));
+document.querySelector("#copyLinkButton").addEventListener("click", async () => {
+  try {
+    await navigator.clipboard.writeText(window.location.href);
+    notify("当前页面链接已复制。其他人需要能访问这个项目地址。");
+  } catch { notify("无法访问剪贴板，请复制浏览器地址栏中的链接。"); }
+});
+document.querySelector("#shortcutsButton").addEventListener("click", () => els.shortcutsDialog.showModal());
+els.moreTools.addEventListener("beforetoggle", event => {
+  els.moreToolsButton.setAttribute("aria-expanded", String(event.newState === "open"));
+  if (event.newState === "open") positionTopPopover(els.moreTools, els.moreToolsButton, 258);
+  else setZoomMenu(false);
+});
+document.querySelector("#closeShortcuts").addEventListener("click", () => els.shortcutsDialog.close());
 document.querySelector("#closePreview").addEventListener("click", () => els.previewDialog.close());
+els.previewDialog.addEventListener("close", () => {
+  if (state.manifest) renderPageCanvas(state.activePage, false, state.routeParams, state.activeScrollY);
+  document.querySelector("#runPrototypeButton").focus();
+});
 document.querySelector("#openNewWindow").addEventListener("click", () => state.previewPath && window.open(state.previewPath, "_blank", "noopener"));
 els.pageSearch.addEventListener("input", (event) => renderNavigation(event.target.value));
 document.addEventListener("click", (event) => {
   if (!event.target.closest(".zoom-picker")) setZoomMenu(false);
 });
 document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape") setZoomMenu(false);
+  const drawer = window.innerWidth <= 720 && state.sidebarOpen ? els.sidebar
+    : window.innerWidth <= 980 && state.inspectorOpen ? els.inspector : null;
+  if (event.key === "Tab" && drawer && !els.previewDialog.open && !els.shortcutsDialog.open && !els.moreTools.matches(":popover-open") && els.zoomMenu.hidden) {
+    const stops = [...drawer.querySelectorAll('button:not(:disabled), input, textarea, select, a[href], [tabindex="0"]')].filter(element => element.getClientRects().length);
+    const first = stops[0], last = stops.at(-1);
+    if (first && (!drawer.contains(document.activeElement) || (event.shiftKey ? document.activeElement === first : document.activeElement === last))) {
+      event.preventDefault();
+      (event.shiftKey ? last : first).focus();
+    }
+  }
+  if (event.key === "Escape") {
+    if (!els.zoomMenu.hidden) { event.preventDefault(); setZoomMenu(false); els.zoomMenuButton.focus(); return; }
+    if (els.moreTools.matches(":popover-open")) { event.preventDefault(); els.moreTools.hidePopover(); els.moreToolsButton.focus(); return; }
+  }
   if (event.key === "Escape" && (state.placement || state.editingMarker) && !els.previewDialog.open) {
     const page = state.manifest.pages.find((item) => item.id === state.activePage);
     const node = page && document.querySelector(`#node-${CSS.escape(page.id)}`);
@@ -1508,10 +1716,33 @@ document.addEventListener("keydown", (event) => {
       resetAnnotationInteraction();
       rerenderMarkers(node, page);
     }
+    return;
+  }
+  if (els.previewDialog.open || els.shortcutsDialog.open || !state.manifest) return;
+  const editingText = event.target.closest("input, textarea, select, [contenteditable='true']");
+  if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+    event.preventDefault();
+    togglePanel("sidebar", true);
+    els.pageSearch.focus();
+    return;
+  }
+  if (editingText || event.metaKey || event.ctrlKey) return;
+  if (event.key === "/") { event.preventDefault(); togglePanel("sidebar", true); els.pageSearch.focus(); }
+  else if (event.key === "?") { event.preventDefault(); els.shortcutsDialog.showModal(); }
+  else if (event.key === "0") { event.preventDefault(); fitCanvas(); }
+  else if (event.key === "1") { event.preventDefault(); setZoom(1); }
+  else if (["+", "="].includes(event.key)) { event.preventDefault(); stepZoom(1); }
+  else if (event.key === "-") { event.preventDefault(); stepZoom(-1); }
+  else if (event.altKey && event.key === "Enter") { event.preventDefault(); document.querySelector("#runPrototypeButton").click(); }
+  else if (event.key.toLowerCase() === "m") setMarkerVisibility(!state.showMarkers);
+  else if (event.key === "Escape") {
+    if (window.innerWidth <= 980) { state.inspectorOpen = false; if (window.innerWidth <= 720) state.sidebarOpen = false; applyPanelState(); }
   }
 });
 
 window.addEventListener("message", (event) => {
+  const sourceFrame = [els.previewFrame, ...document.querySelectorAll(".page-node iframe")].find(frame => frame.contentWindow === event.source);
+  if (!sourceFrame || event.origin !== new URL(sourceFrame.src, window.location.href).origin || !state.manifest) return;
   if (event.data?.type === "prototype:viewport") {
     if (event.source === els.previewFrame.contentWindow || event.source === document.querySelector(".page-node iframe")?.contentWindow) {
       state.activeScrollY = Number(event.data.scrollY) || 0;
@@ -1532,8 +1763,16 @@ window.addEventListener("message", (event) => {
   routeTo(page, event.data.params || {}, event.data.scrollY);
 });
 
+let lastWindowWidth = window.innerWidth;
 window.addEventListener("resize", () => {
-  updateSizer();
+  syncTopTools();
+  if (!els.zoomMenu.hidden) positionTopPopover(els.zoomMenu, els.zoomMenuButton, 124);
+  if (els.moreTools.matches(":popover-open")) positionTopPopover(els.moreTools, els.moreToolsButton, 258);
+  if ((window.innerWidth <= 980) !== (lastWindowWidth <= 980)) state.inspectorOpen = window.innerWidth > 980;
+  if ((window.innerWidth <= 720) !== (lastWindowWidth <= 720)) state.sidebarOpen = window.innerWidth > 720;
+  lastWindowWidth = window.innerWidth;
+  applyPanelState();
+  if (els.previewDialog.open) fitPreviewDevice();
   if (state.mode === "overview") drawConnections();
   document.querySelectorAll(".page-node").forEach((node) => {
     const frame = node.querySelector("iframe");
@@ -1554,7 +1793,90 @@ els.workspace.addEventListener("pointermove", (event) => {
   els.workspace.scrollTop = pan.top - (event.clientY - pan.y);
 });
 els.workspace.addEventListener("pointerup", () => { pan = null; els.workspace.classList.remove("is-panning"); });
+els.workspace.addEventListener("pointercancel", () => { pan = null; els.workspace.classList.remove("is-panning"); });
 
+window.addEventListener("hashchange", () => {
+  if (!state.manifest) return;
+  let id;
+  try { id = decodeURIComponent(window.location.hash.slice(1)); } catch { return; }
+  if (id === "overview" && state.mode !== "overview") renderOverview();
+  else if (id !== state.activePage && state.manifest.pages.some(page => page.id === id)) renderPageCanvas(id);
+  const actual = state.mode === "overview" ? "overview" : state.activePage;
+  if (actual && id !== actual) history.replaceState(null, "", `#${encodeURIComponent(actual)}`);
+});
+window.addEventListener("beforeunload", event => {
+  if (state.editingMarker || state.annotationPersistence.status === "saving") { event.preventDefault(); event.returnValue = ""; }
+});
+
+function setupQuickTooltips() {
+  const tooltip = document.querySelector("#controlTooltip");
+  let anchor = null, showTimer, hideTimer;
+  const hide = () => {
+    clearTimeout(showTimer);
+    clearTimeout(hideTimer);
+    if (tooltip.matches(":popover-open")) tooltip.hidePopover();
+    tooltip.hidden = true;
+    if (anchor) {
+      const descriptions = (anchor.getAttribute("aria-describedby") || "").split(/\s+/).filter(id => id && id !== tooltip.id);
+      if (descriptions.length) anchor.setAttribute("aria-describedby", descriptions.join(" "));
+      else anchor.removeAttribute("aria-describedby");
+    }
+    anchor = null;
+  };
+  const show = button => {
+    hide();
+    if (!button.isConnected || button.disabled || !button.getClientRects().length) return;
+    anchor = button;
+    tooltip.textContent = button.dataset.tooltip;
+    tooltip.style.left = "8px";
+    tooltip.style.top = "0px";
+    tooltip.hidden = false;
+    tooltip.showPopover();
+    const rect = button.getBoundingClientRect();
+    const box = tooltip.getBoundingClientRect();
+    tooltip.style.left = `${Math.max(8, Math.min(innerWidth - box.width - 8, rect.left + rect.width / 2 - box.width / 2))}px`;
+    tooltip.style.top = `${rect.bottom + box.height + 8 <= innerHeight ? rect.bottom + 8 : Math.max(8, rect.top - box.height - 8)}px`;
+    const descriptions = (button.getAttribute("aria-describedby") || "").split(/\s+/).filter(Boolean);
+    button.setAttribute("aria-describedby", [...new Set([...descriptions, tooltip.id])].join(" "));
+  };
+  document.querySelectorAll(".topbar button").forEach(button => {
+    const label = button.getAttribute("title") || button.getAttribute("aria-label");
+    if (!label) return;
+    button.dataset.tooltip = label;
+    button.removeAttribute("title");
+    button.addEventListener("pointerenter", event => {
+      if (event.pointerType === "touch") return;
+      hide();
+      showTimer = setTimeout(() => show(button), 80);
+    });
+    button.addEventListener("pointerleave", () => {
+      clearTimeout(showTimer);
+      hideTimer = setTimeout(hide, 100);
+    });
+    button.addEventListener("focus", () => {
+      if (!button.matches(":focus-visible")) return;
+      hide();
+      // Native popovers may restore focus while still completing their own toggle.
+      // Show on the next task to avoid opening another popover reentrantly.
+      showTimer = setTimeout(() => {
+        if (document.activeElement === button && button.matches(":focus-visible")) show(button);
+      }, 0);
+    });
+    button.addEventListener("blur", hide);
+    button.addEventListener("click", hide);
+  });
+  tooltip.addEventListener("pointerenter", () => clearTimeout(hideTimer));
+  tooltip.addEventListener("pointerleave", hide);
+  document.addEventListener("keydown", event => { if (event.key === "Escape") hide(); });
+  window.addEventListener("resize", hide);
+  window.addEventListener("scroll", hide, true);
+  window.addEventListener("blur", hide);
+  els.moreTools.addEventListener("beforetoggle", hide);
+  els.previewDialog.addEventListener("beforetoggle", hide);
+  els.shortcutsDialog.addEventListener("beforetoggle", hide);
+}
+
+setupQuickTooltips();
 boot().catch((error) => {
-  els.flow.innerHTML = `<div style="padding:40px;color:#ff9a92">${error.message}<br><small>请通过本地 HTTP 服务打开此原型。</small></div>`;
+  els.flow.innerHTML = `<div class="workspace-error" role="alert"><strong>暂时无法打开原型</strong>${escapeHtml(error.message)}<br>请通过本地 HTTP 服务访问，并检查项目的 prototype.json。</div>`;
 });

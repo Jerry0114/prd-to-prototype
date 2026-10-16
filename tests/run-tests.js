@@ -219,28 +219,16 @@ const tests = [
     }, { valid: "内容", invalid: 2 });
     assert.equal(dynamicErrors.length, 1);
   }],
-  ["标准查看器画布间距、缩放档位与默认倍率", () => {
+  ["标准查看器离线资源、标注入口与同步完整性", () => {
     const skillViewerDir = path.join(skillRoot, "assets", "prototype-viewer");
     const viewerHtml = fs.readFileSync(path.join(skillViewerDir, "index.html"), "utf8");
     const viewerCss = fs.readFileSync(path.join(skillViewerDir, "viewer.css"), "utf8");
     const viewerJs = fs.readFileSync(path.join(skillViewerDir, "viewer.js"), "utf8");
     const annotationStoreJs = fs.readFileSync(path.join(skillViewerDir, "annotation-store.js"), "utf8");
-    assert.match(viewerCss, /padding: 32px 110px 210px 32px;/);
-    assert.match(viewerCss, /\.canvas\.is-page-canvas \.flow\.is-page-mode \{ align-items: flex-start; \}/);
-    assert.match(viewerCss, /padding: 32px 90px 52px 32px;/);
-    assert.match(viewerCss, /\.canvas \{[^}]*transform: scale\(1\.25\);/);
-    assert.match(viewerHtml, /<span id="zoomValue">125%<\/span>/);
-    assert.match(viewerHtml, /class="is-active" data-zoom-level="1\.25">125%<\/button>/);
-    assert.doesNotMatch(viewerHtml, /data-zoom-level="0\.25"/);
-    assert.match(viewerHtml, /data-zoom-level="1\.5">150%<\/button>/);
-    assert.match(viewerJs, /const zoomLevels = \[0\.5, 0\.8, 1, 1\.25, 1\.5\];/);
-    assert.match(viewerJs, /zoom: 1\.25,/);
-    assert.match(viewerJs, /setZoom\(1\.25\);/);
-    assert.match(viewerJs, /Math\.min\(1\.5, Math\.max\(0\.5, nextZoom\)\)/);
-    assert.match(viewerCss, /\.brand-mark \{ width: 34px; height: 34px;/);
-    assert.match(viewerCss, /\.brand-lockup span \{[^}]*margin-top: 3px;[^}]*font-size: 12px;/);
-    assert.doesNotMatch(viewerCss, /\.brand-lockup (?:strong|span) \{[^}]*line-height:/);
-    assert.match(viewerCss, /\.annotation-marker \{[\s\S]*?width: 26px;[\s\S]*?height: 26px;/);
+    assert.doesNotMatch(viewerHtml, /(?:src|href)=["']https?:\/\//);
+    assert.doesNotMatch(viewerCss, /@import|url\(["']?https?:\/\//);
+    assert.match(viewerHtml, /id="inspector"/);
+    assert.doesNotMatch(viewerHtml, /id="pageStateSelect"/);
     assert.match(viewerJs, /function positionMarkersFromAnchors\(node, frame\)/);
     assert.match(viewerJs, /frameDocument\.getElementById\(anchorId\)/);
     assert.match(viewerJs, /point\.dataset\.anchorResolved = "true"/);
@@ -252,7 +240,6 @@ const tests = [
     assert.match(viewerJs, /point\.dataset\.anchorResolved = "preview"/);
     assert.match(viewerCss, /\.annotation-marker\[hidden\] \{ display: none; \}/);
     assert.match(viewerJs, /initialView = decodeURIComponent\(rawInitialView\)/);
-    assert.match(viewerCss, /\.overview-nav \{[\s\S]*?height: 36px;[\s\S]*?font-size: 12px;/);
     assert.doesNotMatch(viewerHtml, /<h1>页面<\/h1>/);
     assert.doesNotMatch(viewerHtml, /class="status-dot"/);
     assert.doesNotMatch(viewerHtml, /id="schemaVersion"/);

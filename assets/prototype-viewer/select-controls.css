@@ -1,0 +1,32 @@
+/* Shared native single-select affordance. Load after the page's own CSS.
+   Typography, colors, height and focus treatment belong to the host page. */
+select:not([multiple]):not([size]),
+select[size="1"]:not([multiple]) {
+  --select-arrow-inset: 12px;
+  --select-arrow-size: 12px;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='m3 4.5 3 3 3-3' fill='none' stroke='%23626a7c' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-position: right var(--select-arrow-inset) center;
+  background-repeat: no-repeat;
+  background-size: var(--select-arrow-size) var(--select-arrow-size);
+  padding-inline-start: 12px;
+  padding-inline-end: calc(var(--select-arrow-inset) + var(--select-arrow-size) + 12px);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+select:not([multiple]):not([size]):dir(rtl),
+select[size="1"]:not([multiple]):dir(rtl) {
+  background-position: left var(--select-arrow-inset) center;
+}
+select:disabled { cursor: not-allowed; }
+@media (forced-colors: active) {
+  select:not([multiple]):not([size]),
+  select[size="1"]:not([multiple]) {
+    appearance: auto;
+    -webkit-appearance: auto;
+    background-image: none;
+    padding-inline: 8px;
+  }
+}

@@ -1,5 +1,7 @@
 # 公开版验证记录
 
+本文件保留首次发布时的历史检查结果；当前查看器与独立状态页面策略见 [查看器更新记录](VIEWER-REFRESH.md)。
+
 验证日期：2026-09-21。执行环境：macOS、Node.js 24.15.0、Chromium（agent-browser）。CI 已配置 Node.js 22／24，但这里不将尚未运行的 GitHub Actions 视为已通过。
 
 ## 自动检查

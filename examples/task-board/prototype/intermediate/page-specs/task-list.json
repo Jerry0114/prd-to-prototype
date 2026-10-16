@@ -297,7 +297,8 @@
     "audience": "frontend-development"
   },
   "designSystemRefs": [
-    "assets/task-board.css"
+    "assets/task-board.css",
+    "select-controls.css"
   ],
   "openQuestions": []
 }

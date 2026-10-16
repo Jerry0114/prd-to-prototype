@@ -20,6 +20,7 @@ function main() {
   const files = [
     "index.html",
     "viewer.css",
+    "select-controls.css",
     "viewer.js",
     "annotation-store.js",
     "document-viewer.html",
