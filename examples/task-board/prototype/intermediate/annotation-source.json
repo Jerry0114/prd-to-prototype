@@ -1,0 +1,176 @@
+{
+  "pages": [
+    {
+      "id": "task-list",
+      "modules": [
+        {
+          "id": "filters",
+          "title": "筛选区",
+          "content": "关键词输入；进度为全部、待办、进行中、已完成，默认全部。",
+          "data": "当前实现：关键词去除首尾空格后匹配任务标题，与进度条件同时生效。",
+          "interaction": "输入或切换进度后立即更新列表；清空关键词不重置进度。当前浏览器会话保存条件，刷新或返回列表后恢复。",
+          "requiredDimensions": [
+            "content",
+            "data",
+            "interaction"
+          ],
+          "requirementRefs": [
+            "REQ-001",
+            "REQ-004"
+          ],
+          "ruleSources": [
+            {
+              "dimension": "content",
+              "classification": "implemented",
+              "requirementRefs": [
+                "REQ-001",
+                "REQ-004"
+              ],
+              "note": "依据 task-board.js 与页面 HTML；PRD 未明确的细节为当前实现，不代表新增确认。"
+            },
+            {
+              "dimension": "data",
+              "classification": "implemented",
+              "requirementRefs": [
+                "REQ-001",
+                "REQ-004"
+              ],
+              "note": "依据 task-board.js 与页面 HTML；PRD 未明确的细节为当前实现，不代表新增确认。"
+            },
+            {
+              "dimension": "interaction",
+              "classification": "implemented",
+              "requirementRefs": [
+                "REQ-001",
+                "REQ-004"
+              ],
+              "note": "依据 task-board.js 与页面 HTML；PRD 未明确的细节为当前实现，不代表新增确认。"
+            }
+          ]
+        },
+        {
+          "id": "tasks",
+          "title": "任务列表",
+          "content": "每项展示标题、编号、负责人代号、截止日期和进度；结果数量随筛选更新。",
+          "interaction": "点击任务标题携带任务 ID 进入详情。列表不提供完成或返回操作。",
+          "state": "无匹配结果时展示空态并保留筛选入口；加载、失败与重试规则见本页状态说明。",
+          "requiredDimensions": [
+            "content",
+            "interaction",
+            "state"
+          ],
+          "requirementRefs": [
+            "REQ-001",
+            "REQ-002",
+            "REQ-003"
+          ],
+          "ruleSources": [
+            {
+              "dimension": "content",
+              "classification": "implemented",
+              "requirementRefs": [
+                "REQ-001",
+                "REQ-002",
+                "REQ-003"
+              ],
+              "note": "依据 task-board.js 与页面 HTML；PRD 未明确的细节为当前实现，不代表新增确认。"
+            },
+            {
+              "dimension": "interaction",
+              "classification": "implemented",
+              "requirementRefs": [
+                "REQ-001",
+                "REQ-002",
+                "REQ-003"
+              ],
+              "note": "依据 task-board.js 与页面 HTML；PRD 未明确的细节为当前实现，不代表新增确认。"
+            },
+            {
+              "dimension": "state",
+              "classification": "implemented",
+              "requirementRefs": [
+                "REQ-001",
+                "REQ-002",
+                "REQ-003"
+              ],
+              "note": "依据 task-board.js 与页面 HTML；PRD 未明确的细节为当前实现，不代表新增确认。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "task-detail",
+      "modules": [
+        {
+          "id": "detail",
+          "title": "任务信息",
+          "content": "按传入任务 ID 展示标题、说明、负责人代号、截止日期和进度。",
+          "state": "任务不存在时显示找不到任务的提示并禁用完成操作；返回列表仍可用。",
+          "requiredDimensions": [
+            "content",
+            "state"
+          ],
+          "requirementRefs": [
+            "REQ-002",
+            "REQ-003"
+          ],
+          "ruleSources": [
+            {
+              "dimension": "content",
+              "classification": "implemented",
+              "requirementRefs": [
+                "REQ-002",
+                "REQ-003"
+              ],
+              "note": "依据 task-board.js 与页面 HTML；PRD 未明确的细节为当前实现，不代表新增确认。"
+            },
+            {
+              "dimension": "state",
+              "classification": "implemented",
+              "requirementRefs": [
+                "REQ-002",
+                "REQ-003"
+              ],
+              "note": "依据 task-board.js 与页面 HTML；PRD 未明确的细节为当前实现，不代表新增确认。"
+            }
+          ]
+        },
+        {
+          "id": "actions",
+          "title": "任务操作",
+          "interaction": "有效且未完成的任务可标记完成：只更新当前任务，保存会话并同步进度与按钮；已完成时按钮禁用。返回列表恢复上次关键词和进度，无记录时使用空关键词与全部进度。",
+          "state": "当前原型保存失败会提示未保存，但仍保留内存中的更新，刷新后可能丢失，不能视为已持久化。",
+          "requiredDimensions": [
+            "interaction",
+            "state"
+          ],
+          "requirementRefs": [
+            "REQ-002",
+            "REQ-004"
+          ],
+          "ruleSources": [
+            {
+              "dimension": "interaction",
+              "classification": "implemented",
+              "requirementRefs": [
+                "REQ-002",
+                "REQ-004"
+              ],
+              "note": "依据 task-board.js 与页面 HTML；PRD 未明确的细节为当前实现，不代表新增确认。"
+            },
+            {
+              "dimension": "state",
+              "classification": "implemented",
+              "requirementRefs": [
+                "REQ-002",
+                "REQ-004"
+              ],
+              "note": "依据 task-board.js 与页面 HTML；PRD 未明确的细节为当前实现，不代表新增确认。"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

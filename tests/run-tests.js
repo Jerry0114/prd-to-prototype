@@ -432,7 +432,7 @@ const tests = [
     assert.equal(result.status, 0, result.stderr || result.stdout);
     const spec = JSON.parse(fs.readFileSync(path.join(specsDir, "test.json"), "utf8"));
     assert.equal(spec.sections[0].title, "真实模块");
-    assert.equal(spec.annotations[0].content, "模块定义\n展示真实内容。\n\n展示内容\n字段甲和字段乙。\n\n数据规则\n数据按时间倒序。\n\n交互逻辑\n点击进入详情。\n\n异常与状态\n失败时允许重试。");
+    assert.equal(spec.annotations[0].content, "旧内容\n\n模块定义\n展示真实内容。\n\n展示内容\n字段甲和字段乙。\n\n数据规则\n数据按时间倒序。\n\n交互逻辑\n点击进入详情。\n\n异常与状态\n失败时允许重试。");
     assert.deepEqual(spec.annotations[0].anchor, { anchorId: "module-one", bindingStatus: "bound" });
     assert.equal("details" in spec.annotations[0], false);
     assert.match(fs.readFileSync(path.join(fixtureDir, "intermediate", "annotation-content-rerun-report.md"), "utf8"), /校对标注：1/);

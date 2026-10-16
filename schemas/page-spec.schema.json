@@ -26,7 +26,7 @@
     "fields": { "type": "array", "items": { "$ref": "#/$defs/field" } },
     "actions": { "type": "array", "items": { "$ref": "#/$defs/action" } },
     "states": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/state" } },
-    "annotations": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/annotation" } },
+    "annotations": { "type": "array", "items": { "$ref": "#/$defs/annotation" } },
     "handoff": { "$ref": "#/$defs/handoff" },
     "designSystemRefs": { "type": "array", "items": { "type": "string" } },
     "openQuestions": {
@@ -40,6 +40,8 @@
     }
   },
   "$defs": {
+    "dimension": { "enum": ["definition", "content", "data", "interaction", "state", "layout", "compliance", "docs"] },
+    "changeStatus": { "enum": ["new", "changed", "impacted", "unchanged"] },
     "section": {
       "type": "object",
       "required": ["id", "title", "component", "contentRule"],
@@ -60,6 +62,9 @@
         "id": { "type": "string" },
         "label": { "type": "string" },
         "dataRule": { "type": "string" },
+        "moduleId": { "type": "string", "minLength": 1 },
+        "changeStatus": { "$ref": "#/$defs/changeStatus" },
+        "changeReason": { "type": "string", "minLength": 1 },
         "controlType": { "enum": ["text", "password", "number", "select", "multi-select", "checkbox", "radio", "date", "date-range", "display"] },
         "options": {
           "type": "array",
@@ -87,6 +92,9 @@
         "id": { "type": "string" },
         "label": { "type": "string" },
         "trigger": { "type": "string" },
+        "moduleId": { "type": "string", "minLength": 1 },
+        "changeStatus": { "$ref": "#/$defs/changeStatus" },
+        "changeReason": { "type": "string", "minLength": 1 },
         "result": { "type": "string" },
         "targetPageId": { "type": ["string", "null"] },
         "failure": { "type": "string" },
@@ -101,6 +109,9 @@
       "properties": {
         "id": { "enum": ["normal", "empty", "error", "forbidden", "loading", "expired"] },
         "applicable": { "type": "boolean" },
+        "moduleId": { "type": "string", "minLength": 1 },
+        "changeStatus": { "$ref": "#/$defs/changeStatus" },
+        "changeReason": { "type": "string", "minLength": 1 },
         "description": { "type": "string" }
       },
       "additionalProperties": false
@@ -121,6 +132,21 @@
           "description": "该对象的完整说明；需要区分定义、内容、数据、交互、状态、布局、合规或关联文档时，在同一字符串中用空行分段。"
         },
         "scope": { "enum": ["module", "page", "element"] },
+        "requiredDimensions": { "type": "array", "items": { "$ref": "#/$defs/dimension" }, "uniqueItems": true },
+        "ruleSources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["dimension", "classification", "requirementRefs"],
+            "properties": {
+              "dimension": { "$ref": "#/$defs/dimension" },
+              "classification": { "enum": ["explicit", "implemented", "inferred", "proposed", "unresolved"] },
+              "requirementRefs": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+              "note": { "type": "string", "minLength": 1 }
+            },
+            "additionalProperties": false
+          }
+        },
         "moduleId": { "type": "string" },
         "requirementRefs": { "type": "array", "minItems": 1, "items": { "type": "string" } },
         "covers": {
@@ -237,7 +263,7 @@
       "type": "object",
       "required": ["version", "audience", "completenessTarget", "coverageDimensions", "relatedDocs"],
       "properties": {
-        "version": { "enum": ["2.0", "2.1"] },
+        "version": { "enum": ["2.0", "2.1", "2.2"] },
         "audience": { "const": "frontend-development" },
         "completenessTarget": { "const": "implement-without-opening-prd" },
         "annotationPolicy": {
@@ -249,12 +275,10 @@
             "coverageScope": { "enum": ["full-page", "change-impact"] },
             "requiredDimensions": {
               "type": "array",
-              "minItems": 1,
-              "items": { "enum": ["definition", "content", "data", "interaction", "state", "layout", "compliance"] },
-              "contains": { "const": "definition" },
+              "items": { "$ref": "#/$defs/dimension" },
               "uniqueItems": true
             },
-            "minimumApplicableDimensions": { "type": "integer", "minimum": 3 }
+            "minimumApplicableDimensions": { "type": "integer", "minimum": 1 }
           },
           "additionalProperties": false
         },

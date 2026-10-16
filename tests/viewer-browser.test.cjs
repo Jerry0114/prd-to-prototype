@@ -34,6 +34,25 @@ async function main() {
     await page.locator('.annotation-edit-form button[type="submit"]').click();
     await expect(page.locator('.statusbar .annotation-storage-status')).toHaveAttribute('data-state', 'saved');
   };
+  await test('规格优先于过期镜像，镜像已删点位不复活，模块正文不串台', async () => {
+    const file = path.join(fixture, 'prototype.json');
+    const original = fs.readFileSync(file, 'utf8');
+    try {
+      const manifest = JSON.parse(original);
+      manifest.pages[0].markers[0].content = '过期镜像：完成任务并返回';
+      manifest.pages[0].markers.push({ ...manifest.pages[0].markers[0], id: 'obsolete-note' });
+      fs.writeFileSync(file, JSON.stringify(manifest));
+      await page.reload();
+      await annotationTab().click();
+      await expect(page.locator('.annotation-item')).toHaveCount(2);
+      await expect(page.locator('.annotation-item').first()).toContainText('输入或切换进度后立即更新列表');
+      await expect(page.locator('.annotation-item').first()).not.toContainText('过期镜像');
+      await page.screenshot({ path: path.join(output, 'annotation-v22.png') });
+    } finally {
+      fs.writeFileSync(file, original);
+      await page.goto(base);
+    }
+  });
   await test('单行顶栏整合工具，删除重复标题，右下角可打开快捷键', async () => {
     await expect(page.locator('#projectName, .contextbar, .sidebar-heading, .sidebar-footer, .inspector-title')).toHaveCount(0);
     await expect(page.locator('#previousPage, #nextPage, #resetButton, #pageStateSelect, .state-button')).toHaveCount(0);

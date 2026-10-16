@@ -24,13 +24,13 @@
       "id": "filters",
       "title": "筛选区",
       "component": "section",
-      "contentRule": "参见同模块标注，数据为虚构任务。"
+      "contentRule": "关键词输入；进度为全部、待办、进行中、已完成，默认全部。"
     },
     {
       "id": "tasks",
       "title": "任务列表",
       "component": "section",
-      "contentRule": "参见同模块标注，数据为虚构任务。"
+      "contentRule": "每项展示标题、编号、负责人代号、截止日期和进度；结果数量随筛选更新。"
     }
   ],
   "fields": [
@@ -45,7 +45,8 @@
         "REQ-002",
         "REQ-003",
         "REQ-004"
-      ]
+      ],
+      "moduleId": "filters"
     },
     {
       "id": "status",
@@ -76,7 +77,8 @@
         "REQ-002",
         "REQ-003",
         "REQ-004"
-      ]
+      ],
+      "moduleId": "filters"
     }
   ],
   "actions": [
@@ -95,7 +97,8 @@
         "REQ-002",
         "REQ-003",
         "REQ-004"
-      ]
+      ],
+      "moduleId": "tasks"
     }
   ],
   "states": [
@@ -136,11 +139,9 @@
       "title": "筛选区",
       "scope": "module",
       "moduleId": "filters",
-      "content": "模块定义\n查找当前任务。\n\n展示内容\n关键词输入、进度选择。\n\n数据规则\n数据完全虚构，使用本地会话保存；关键词匹配标题并与进度筛选同时生效。\n\n交互逻辑\n点击标题传递任务 ID；标记完成更新会话；返回后保留查询条件。\n\n异常与状态\n加载中显示进度提示；无结果显示空态；错误允许重试；没有权限与过期场景。\n\n关联文档\ndocs/PRD.md",
+      "content": "展示内容\n关键词输入；进度为全部、待办、进行中、已完成，默认全部。\n\n数据规则\n当前实现：关键词去除首尾空格后匹配任务标题，与进度条件同时生效。\n\n交互逻辑\n输入或切换进度后立即更新列表；清空关键词不重置进度。当前浏览器会话保存条件，刷新或返回列表后恢复。",
       "requirementRefs": [
         "REQ-001",
-        "REQ-002",
-        "REQ-003",
         "REQ-004"
       ],
       "covers": [
@@ -160,27 +161,56 @@
           "coordinateSpace": "reference-viewport-percent"
         },
         "bindingStatus": "bound"
-      }
+      },
+      "requiredDimensions": [
+        "content",
+        "data",
+        "interaction"
+      ],
+      "ruleSources": [
+        {
+          "dimension": "content",
+          "classification": "implemented",
+          "requirementRefs": [
+            "REQ-001",
+            "REQ-004"
+          ],
+          "note": "依据 task-board.js 与页面 HTML；PRD 未明确的细节为当前实现，不代表新增确认。"
+        },
+        {
+          "dimension": "data",
+          "classification": "implemented",
+          "requirementRefs": [
+            "REQ-001",
+            "REQ-004"
+          ],
+          "note": "依据 task-board.js 与页面 HTML；PRD 未明确的细节为当前实现，不代表新增确认。"
+        },
+        {
+          "dimension": "interaction",
+          "classification": "implemented",
+          "requirementRefs": [
+            "REQ-001",
+            "REQ-004"
+          ],
+          "note": "依据 task-board.js 与页面 HTML；PRD 未明确的细节为当前实现，不代表新增确认。"
+        }
+      ]
     },
     {
       "id": "task-list-note-2",
       "title": "任务列表",
       "scope": "module",
       "moduleId": "tasks",
-      "content": "模块定义\n呈现任务信息与操作。\n\n展示内容\n任务标题、说明、成员代号、日期和进度；操作按页面提供查看、返回或完成。\n\n数据规则\n数据完全虚构，使用本地会话保存；关键词匹配标题并与进度筛选同时生效。\n\n交互逻辑\n点击标题传递任务 ID；标记完成更新会话；返回后保留查询条件。\n\n异常与状态\n加载中显示进度提示；无结果显示空态；错误允许重试；没有权限与过期场景。\n\n关联文档\ndocs/PRD.md",
+      "content": "展示内容\n每项展示标题、编号、负责人代号、截止日期和进度；结果数量随筛选更新。\n\n交互逻辑\n点击任务标题携带任务 ID 进入详情。列表不提供完成或返回操作。\n\n异常与状态\n无匹配结果时展示空态并保留筛选入口；加载、失败与重试规则见本页状态说明。",
       "requirementRefs": [
         "REQ-001",
         "REQ-002",
-        "REQ-003",
-        "REQ-004"
+        "REQ-003"
       ],
       "covers": [
         "section:tasks",
-        "action:open",
-        "state:normal",
-        "state:loading",
-        "state:empty",
-        "state:error"
+        "action:open"
       ],
       "anchor": {
         "anchorId": "tasks",
@@ -194,22 +224,55 @@
           "coordinateSpace": "reference-viewport-percent"
         },
         "bindingStatus": "bound"
-      }
+      },
+      "requiredDimensions": [
+        "content",
+        "interaction",
+        "state"
+      ],
+      "ruleSources": [
+        {
+          "dimension": "content",
+          "classification": "implemented",
+          "requirementRefs": [
+            "REQ-001",
+            "REQ-002",
+            "REQ-003"
+          ],
+          "note": "依据 task-board.js 与页面 HTML；PRD 未明确的细节为当前实现，不代表新增确认。"
+        },
+        {
+          "dimension": "interaction",
+          "classification": "implemented",
+          "requirementRefs": [
+            "REQ-001",
+            "REQ-002",
+            "REQ-003"
+          ],
+          "note": "依据 task-board.js 与页面 HTML；PRD 未明确的细节为当前实现，不代表新增确认。"
+        },
+        {
+          "dimension": "state",
+          "classification": "implemented",
+          "requirementRefs": [
+            "REQ-001",
+            "REQ-002",
+            "REQ-003"
+          ],
+          "note": "依据 task-board.js 与页面 HTML；PRD 未明确的细节为当前实现，不代表新增确认。"
+        }
+      ]
     }
   ],
   "handoff": {
-    "version": "2.1",
+    "version": "2.2",
     "completenessTarget": "implement-without-opening-prd",
     "annotationPolicy": {
       "strategy": "module-complete",
       "moduleSource": "sections",
       "coverageScope": "full-page",
-      "requiredDimensions": [
-        "definition",
-        "content",
-        "interaction"
-      ],
-      "minimumApplicableDimensions": 3
+      "requiredDimensions": [],
+      "minimumApplicableDimensions": 1
     },
     "coverageDimensions": [
       "fields",

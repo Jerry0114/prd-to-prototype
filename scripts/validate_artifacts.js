@@ -5,6 +5,7 @@ const path = require("node:path");
 const crypto = require("node:crypto");
 const { inspectPageBriefGate } = require("./check_page_brief_gate.js");
 const { validateSchema, formatSchemaErrors } = require("./lib/schema-validator");
+const { contentIssues, dimensions } = require("./lib/annotation-content");
 
 function parseArgs(argv) {
   const args = { project: null };
@@ -37,22 +38,6 @@ function hasText(value) {
   return typeof value === "string" && value.trim().length > 0;
 }
 
-const annotationDimensionHeadings = {
-  definition: ["模块定义", "页面定义", "对象定义", "定义"],
-  content: ["展示内容", "内容说明", "操作构成", "菜单结构", "列结构", "单项结构", "正文结构", "卡片内容", "卡片结构", "单元内容", "提示内容", "素材规格", "内容"],
-  data: ["数据规则", "取数规则", "取数与排序", "筛选参数", "内容映射", "内容来源", "栏目映射", "投放规则", "顺序规则", "数据"],
-  interaction: ["交互逻辑", "交互规则", "全局操作", "搜索与折叠", "查询结果", "返回逻辑", "字号与分享", "栏目跳转", "行内操作", "文章跳转", "点击与关闭", "模块跳转", "轮播与跳转", "跳转逻辑", "交互"],
-  state: ["异常与状态", "状态与异常", "异常处理", "状态说明", "状态处理", "失效处理", "降级处理", "局部异常", "加载与异常", "不足处理", "状态"],
-  layout: ["布局规则", "布局说明", "响应式规则", "触控规则", "字号关系", "阅读字阶", "视觉规则", "位置规则", "横滑规则", "布局"],
-  compliance: ["合规规则", "合规说明", "合规"],
-};
-
-function annotationContentDimensions(content) {
-  const headingsInContent = new Set(String(content || "").split("\n").map((line) => line.trim()).filter(Boolean));
-  return new Set(Object.entries(annotationDimensionHeadings)
-    .filter(([, headings]) => headings.some((heading) => headingsInContent.has(heading)))
-    .map(([dimension]) => dimension));
-}
 
 function fileHash(filePath) {
   return crypto.createHash("sha256").update(fs.readFileSync(filePath)).digest("hex");
@@ -450,6 +435,10 @@ function main() {
       if (![annotation.title, annotation.content].every(hasText)) {
         addError("ANNOTATION_REQUIRED_FIELD", `${pageId}/${annotation.id} 缺少标题或内容`);
       }
+      const contentCheck = contentIssues(annotation.content);
+      if (!contentCheck.hasBody || contentCheck.empty.length || contentCheck.duplicate.length) {
+        addError("ANNOTATION_BODY_INVALID", `${pageId}/${annotation.id} 存在空段落、占位正文或重复维度`);
+      }
       if (hasText(annotation.title) && /(必须|不得|不可|不能|需要|应当|应该|不允许)/.test(annotation.title)) {
         addWarning("ANNOTATION_TITLE_RULE_LIKE", `${pageId}/${annotation.id} 的标题“${annotation.title}”包含规则结论，请改为被说明的模块或元素名称，并把规则放入 content`);
       }
@@ -483,14 +472,46 @@ function main() {
     }
 
     const handoffVersion = spec.handoff?.version;
-    const isHandoffV2 = ["2.0", "2.1"].includes(handoffVersion);
-    const isModuleCompleteHandoff = handoffVersion === "2.1";
+    const isHandoffV2 = ["2.0", "2.1", "2.2"].includes(handoffVersion);
+    const isConciseHandoff = handoffVersion === "2.2";
+    const isModuleCompleteHandoff = ["2.1", "2.2"].includes(handoffVersion);
     const annotationCoverageScope = isModuleCompleteHandoff
       ? spec.handoff?.annotationPolicy?.coverageScope
       : "full-page";
     const annotatedSections = isModuleCompleteHandoff && annotationCoverageScope === "change-impact"
       ? sections.filter((section) => ["new", "changed", "impacted"].includes(section.changeStatus))
       : sections;
+    const sectionIndex = new Map(sections.map(section => [section.id, section]));
+    const ownerIndex = new Map([...fields.map(item => [`field:${item.id}`, item]), ...actions.map(item => [`action:${item.id}`, item]), ...states.map(item => [`state:${item.id}`, item])]);
+    function targetInScope(item) {
+      if (!isConciseHandoff || annotationCoverageScope !== "change-impact") return true;
+      const status = item.changeStatus || sectionIndex.get(item.moduleId)?.changeStatus;
+      return ["new", "changed", "impacted"].includes(status);
+    }
+    if (isConciseHandoff) {
+      for (const [target, item] of ownerIndex) {
+        const globalState = target.startsWith("state:") && !item.moduleId;
+        if (!globalState && !sectionIndex.has(item.moduleId)) addError("HANDOFF_TARGET_OWNER_INVALID", `${pageId}/${target} 必须声明有效 moduleId`);
+        if (item.changeStatus && (!hasText(item.changeReason) || !["new", "changed", "impacted", "unchanged"].includes(item.changeStatus))) addError("HANDOFF_TARGET_CHANGE_INVALID", `${pageId}/${target} 的变更状态或依据无效`);
+        if (annotationCoverageScope === "change-impact" && item.changeStatus && item.changeStatus !== "unchanged" && sectionIndex.get(item.moduleId)?.changeStatus === "unchanged") addError("HANDOFF_TARGET_CHANGE_CONFLICT", `${pageId}/${target} 已变更，但所属模块仍为 unchanged`);
+      }
+      for (const annotation of annotations) {
+        const mirror = prototypePages.get(pageId)?.markers?.find(marker => marker.id === annotation.id);
+        if (mirror && ["title", "content"].some(key => key in mirror && mirror[key] !== annotation[key])) addError("ANNOTATION_MIRROR_STALE", `${pageId}/${annotation.id} 的 prototype.json 标注镜像未同步`);
+        for (const source of annotation.ruleSources || []) {
+          if (source.classification === "explicit" && !source.requirementRefs?.length) addError("ANNOTATION_SOURCE_MISSING", `${pageId}/${annotation.id} 的明确规则缺少来源`);
+          if (source.classification !== "explicit" && !hasText(source.note)) addError("ANNOTATION_SOURCE_NOTE_MISSING", `${pageId}/${annotation.id} 的非明确规则必须说明依据或不确定性`);
+          for (const ref of source.requirementRefs || []) if (!requirementIds.has(ref) || !annotation.requirementRefs?.includes(ref)) addError("ANNOTATION_SOURCE_REF_INVALID", `${pageId}/${annotation.id} 的规则来源引用无效或超出本标注需求范围`);
+          if (!contentIssues(annotation.content).populated.has(source.dimension)) addError("ANNOTATION_SOURCE_DIMENSION_INVALID", `${pageId}/${annotation.id} 的来源维度没有对应正文`);
+        }
+      }
+      const seenContent = new Set();
+      for (const annotation of annotations) {
+        const normalized = String(annotation.content).replace(/\s/g, "");
+        if (seenContent.has(normalized)) addWarning("ANNOTATION_CONTENT_DUPLICATE", `${pageId}/${annotation.id} 与同页标注正文相同，请复核模块边界`);
+        seenContent.add(normalized);
+      }
+    }
     if (!isHandoffV2) {
       addWarning("HANDOFF_COVERAGE_LEGACY", `${pageId} 尚未升级为开发交付说明 v2，当前标注不保证覆盖全部字段、操作和状态`);
     } else {
@@ -502,9 +523,9 @@ function main() {
       ]);
       const requiredTargets = new Set([
         ...annotatedSections.map((section) => `section:${section.id}`),
-        ...fields.map((field) => `field:${field.id}`),
-        ...actions.map((action) => `action:${action.id}`),
-        ...states.filter((state) => state.applicable).map((state) => `state:${state.id}`),
+        ...fields.filter(targetInScope).map((field) => `field:${field.id}`),
+        ...actions.filter(targetInScope).map((action) => `action:${action.id}`),
+        ...states.filter((state) => state.applicable && (!isConciseHandoff || state.moduleId) && targetInScope(state)).map((state) => `state:${state.id}`),
       ]);
       const coveredTargets = new Set();
 
@@ -520,6 +541,9 @@ function main() {
             addError("HANDOFF_COVERAGE_TARGET_UNKNOWN", `${pageId}/${annotation.id} 覆盖了不存在的对象 ${target}`);
           } else {
             coveredTargets.add(target);
+            const owner = ownerIndex.get(target);
+            if (isConciseHandoff && owner?.moduleId && annotation.moduleId !== owner.moduleId) addError("HANDOFF_CROSS_MODULE_COVERAGE", `${pageId}/${annotation.id} 跨模块覆盖 ${target}`);
+            if (isConciseHandoff && owner && !targetInScope(owner)) addError("HANDOFF_UNCHANGED_TARGET_ANNOTATED", `${pageId}/${annotation.id} 为未改对象 ${target} 生成了覆盖`);
           }
         }
       }
@@ -537,10 +561,10 @@ function main() {
           || policy.moduleSource !== "sections"
           || !["full-page", "change-impact"].includes(policy.coverageScope)
           || !Array.isArray(policy.requiredDimensions)
-          || !policy.requiredDimensions.includes("definition")
+          || (!isConciseHandoff && !policy.requiredDimensions.includes("definition"))
           || !Number.isInteger(policy.minimumApplicableDimensions)
-          || policy.minimumApplicableDimensions < 3) {
-          addError("HANDOFF_MODULE_POLICY_INVALID", `${pageId} 的 v2.1 annotationPolicy 缺失或不符合模块完整标注规则`);
+          || policy.minimumApplicableDimensions < (isConciseHandoff ? 1 : 3)) {
+          addError("HANDOFF_MODULE_POLICY_INVALID", `${pageId} 的 annotationPolicy 不符合 ${handoffVersion} 标注规则`);
         }
 
         const minimumDimensions = Number.isInteger(policy?.minimumApplicableDimensions)
@@ -562,7 +586,7 @@ function main() {
 
         for (const annotation of annotations) {
           if (!["module", "page", "element"].includes(annotation.scope)) {
-            addError("HANDOFF_ANNOTATION_SCOPE_INVALID", `${pageId}/${annotation.id} 的 v2.1 标注缺少有效 scope`);
+            addError("HANDOFF_ANNOTATION_SCOPE_INVALID", `${pageId}/${annotation.id} 的模块标注缺少有效 scope`);
           }
         }
 
@@ -589,9 +613,11 @@ function main() {
             addError("HANDOFF_MODULE_SECTION_MISMATCH", `${pageId}/${annotation.id} 必须且只能覆盖自身模块 section:${annotation.moduleId}`);
           }
 
-          const contentDimensions = annotationContentDimensions(annotation.content);
-          if (!contentDimensions.has("definition") || contentDimensions.size < minimumDimensions) {
-            addError("HANDOFF_MODULE_CONTENT_DIMENSIONS_INCOMPLETE", `${pageId}/${annotation.id} 的 content 必须用分段标题包含模块定义，且至少说明 ${minimumDimensions} 个适用维度`);
+          const contentDimensions = contentIssues(annotation.content).populated;
+          const required = [...(policy?.requiredDimensions || []), ...(annotation.requiredDimensions || [])];
+          const substantiveDimensions = [...contentDimensions].filter(key => key !== "docs").length;
+          if (required.some(key => !Object.hasOwn(dimensions, key) || !contentDimensions.has(key)) || (!isConciseHandoff && !contentDimensions.has("definition")) || substantiveDimensions < minimumDimensions) {
+            addError("HANDOFF_MODULE_CONTENT_DIMENSIONS_INCOMPLETE", `${pageId}/${annotation.id} 缺少声明的必需维度或有效正文；最低 ${minimumDimensions} 个适用维度`);
           }
 
           if (annotation.anchor?.bindingStatus !== "bound" || annotation.anchor?.anchorId !== annotation.moduleId) {

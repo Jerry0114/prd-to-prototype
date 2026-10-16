@@ -24,13 +24,13 @@
       "id": "detail",
       "title": "任务信息",
       "component": "section",
-      "contentRule": "参见同模块标注，数据为虚构任务。"
+      "contentRule": "按传入任务 ID 展示标题、说明、负责人代号、截止日期和进度。"
     },
     {
       "id": "actions",
       "title": "任务操作",
       "component": "section",
-      "contentRule": "参见同模块标注，数据为虚构任务。"
+      "contentRule": "提供完成与返回操作及其禁用与失败反馈。"
     }
   ],
   "fields": [
@@ -44,7 +44,8 @@
         "REQ-002",
         "REQ-003",
         "REQ-004"
-      ]
+      ],
+      "moduleId": "detail"
     }
   ],
   "actions": [
@@ -63,7 +64,8 @@
         "REQ-002",
         "REQ-003",
         "REQ-004"
-      ]
+      ],
+      "moduleId": "actions"
     },
     {
       "id": "back",
@@ -80,7 +82,8 @@
         "REQ-002",
         "REQ-003",
         "REQ-004"
-      ]
+      ],
+      "moduleId": "actions"
     }
   ],
   "states": [
@@ -121,12 +124,10 @@
       "title": "任务信息",
       "scope": "module",
       "moduleId": "detail",
-      "content": "模块定义\n呈现任务信息与操作。\n\n展示内容\n任务标题、说明、成员代号、日期和进度；操作按页面提供查看、返回或完成。\n\n数据规则\n数据完全虚构，使用本地会话保存；关键词匹配标题并与进度筛选同时生效。\n\n交互逻辑\n点击标题传递任务 ID；标记完成更新会话；返回后保留查询条件。\n\n异常与状态\n加载中显示进度提示；无结果显示空态；错误允许重试；没有权限与过期场景。\n\n关联文档\ndocs/PRD.md",
+      "content": "展示内容\n按传入任务 ID 展示标题、说明、负责人代号、截止日期和进度。\n\n异常与状态\n任务不存在时显示找不到任务的提示并禁用完成操作；返回列表仍可用。",
       "requirementRefs": [
-        "REQ-001",
         "REQ-002",
-        "REQ-003",
-        "REQ-004"
+        "REQ-003"
       ],
       "covers": [
         "section:detail",
@@ -144,28 +145,46 @@
           "coordinateSpace": "reference-viewport-percent"
         },
         "bindingStatus": "bound"
-      }
+      },
+      "requiredDimensions": [
+        "content",
+        "state"
+      ],
+      "ruleSources": [
+        {
+          "dimension": "content",
+          "classification": "implemented",
+          "requirementRefs": [
+            "REQ-002",
+            "REQ-003"
+          ],
+          "note": "依据 task-board.js 与页面 HTML；PRD 未明确的细节为当前实现，不代表新增确认。"
+        },
+        {
+          "dimension": "state",
+          "classification": "implemented",
+          "requirementRefs": [
+            "REQ-002",
+            "REQ-003"
+          ],
+          "note": "依据 task-board.js 与页面 HTML；PRD 未明确的细节为当前实现，不代表新增确认。"
+        }
+      ]
     },
     {
       "id": "task-detail-note-2",
       "title": "任务操作",
       "scope": "module",
       "moduleId": "actions",
-      "content": "模块定义\n呈现任务信息与操作。\n\n展示内容\n任务标题、说明、成员代号、日期和进度；操作按页面提供查看、返回或完成。\n\n数据规则\n数据完全虚构，使用本地会话保存；关键词匹配标题并与进度筛选同时生效。\n\n交互逻辑\n点击标题传递任务 ID；标记完成更新会话；返回后保留查询条件。\n\n异常与状态\n加载中显示进度提示；无结果显示空态；错误允许重试；没有权限与过期场景。\n\n关联文档\ndocs/PRD.md",
+      "content": "交互逻辑\n有效且未完成的任务可标记完成：只更新当前任务，保存会话并同步进度与按钮；已完成时按钮禁用。返回列表恢复上次关键词和进度，无记录时使用空关键词与全部进度。\n\n异常与状态\n当前原型保存失败会提示未保存，但仍保留内存中的更新，刷新后可能丢失，不能视为已持久化。",
       "requirementRefs": [
-        "REQ-001",
         "REQ-002",
-        "REQ-003",
         "REQ-004"
       ],
       "covers": [
         "section:actions",
         "action:complete",
-        "action:back",
-        "state:normal",
-        "state:loading",
-        "state:empty",
-        "state:error"
+        "action:back"
       ],
       "anchor": {
         "anchorId": "actions",
@@ -179,22 +198,42 @@
           "coordinateSpace": "reference-viewport-percent"
         },
         "bindingStatus": "bound"
-      }
+      },
+      "requiredDimensions": [
+        "interaction",
+        "state"
+      ],
+      "ruleSources": [
+        {
+          "dimension": "interaction",
+          "classification": "implemented",
+          "requirementRefs": [
+            "REQ-002",
+            "REQ-004"
+          ],
+          "note": "依据 task-board.js 与页面 HTML；PRD 未明确的细节为当前实现，不代表新增确认。"
+        },
+        {
+          "dimension": "state",
+          "classification": "implemented",
+          "requirementRefs": [
+            "REQ-002",
+            "REQ-004"
+          ],
+          "note": "依据 task-board.js 与页面 HTML；PRD 未明确的细节为当前实现，不代表新增确认。"
+        }
+      ]
     }
   ],
   "handoff": {
-    "version": "2.1",
+    "version": "2.2",
     "completenessTarget": "implement-without-opening-prd",
     "annotationPolicy": {
       "strategy": "module-complete",
       "moduleSource": "sections",
       "coverageScope": "full-page",
-      "requiredDimensions": [
-        "definition",
-        "content",
-        "interaction"
-      ],
-      "minimumApplicableDimensions": 3
+      "requiredDimensions": [],
+      "minimumApplicableDimensions": 1
     },
     "coverageDimensions": [
       "fields",

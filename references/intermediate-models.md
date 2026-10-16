@@ -69,9 +69,9 @@
 - 开发视角页面说明及 DOM 锚点；
 - 待确认项与设计系统引用。
 
-### 4.1 模块完整标注 v2.1
+### 4.1 模块标注 v2.2
 
-新生成的关键交付页面在 `handoff.version` 使用 `2.1`，目标为 `implement-without-opening-prd`。`2.0` 继续兼容既有项目，但只保证对象覆盖，不保证每个模块都有独立说明。完整规则见 `annotation-authoring-rules.md`。
+新生成页面在 `handoff.version` 使用 `2.2`，目标为 `implement-without-opening-prd`。`2.0 / 2.1` 继续兼容；v2.1 仍要求定义与至少三维度，新版按对象需要声明维度，不自动迁移旧规格。完整规则见 `annotation-authoring-rules.md`。
 
 关键字段：
 
@@ -89,6 +89,9 @@
 | `annotations[].content` | 对该对象的完整说明；需要区分模块定义、展示内容、数据规则、交互逻辑、异常与状态、布局、合规或关联文档时，在同一字符串中用空行分段 |
 | `annotations[].scope` | `module` 表示一级模块主标注，`page` 表示全页状态或跨模块规则，`element` 表示补充元素说明 |
 | `annotations[].moduleId` | `scope=module` 时必填，必须与一个 `sections[].id` 一致且一一对应 |
+| `fields[] / actions[] / states[].moduleId` | 字段、动作必填；局部状态填写，页面状态省略；用于归属和增量覆盖 |
+| `annotations[].requiredDimensions` | 该对象的必需维度，与页面策略合并验证；正文不能为空或占位 |
+| `annotations[].ruleSources` | 可选规则来源：维度、明确/实现/推断/建议/未决分类、相关需求和依据说明 |
 | `annotations[].covers` | 标注覆盖的 `section / field / action / state` 对象 |
 | `sections[].changeStatus` | 增量页面使用，标记 `new / changed / impacted / unchanged` |
 | `sections[].changeReason` | 说明本轮为何需要或不需要标注，`change-impact` 下必填 |
@@ -96,16 +99,20 @@
 | `openQuestions[]` | 待确认问题、影响、状态、当前假设和需求引用 |
 | `handoff.acceptanceCriteria` | 使用 GIVEN / WHEN / THEN 表达的页面验收标准 |
 
-查看器按“概要、标注、状态、交付”展示以上对象。覆盖目标：每个页面区块、字段、操作和所有适用状态都至少被一个标注覆盖；页面级角色、入口、出口、前置条件、待确认和验收标准也必须完整。选择型字段必须提供固定选项，或说明动态数据来源。
+查看器按“概要、标注、状态、交付”展示以上对象。本轮范围内的区块、字段、操作及适用局部状态必须有标注覆盖；页面级状态由状态页签说明，角色、入口、出口、前置条件、待确认和验收标准完整交付。选择型字段提供固定选项或动态数据来源。
 
-v2.1 进一步要求：
+v2.2 要求：
 
 - `sections[]` 是页面一级业务模块清单，不只是方便布局的容器；
 - 新建或整体重构页面使用 `full-page`，每个 section 恰好对应一条模块主标注；
 - 既有页面增量改造使用 `change-impact`，只为 `new / changed / impacted` section 生成模块主标注，`unchanged` section 不生成 marker；
-- 每条模块主标注必须包含 `definition` 维度，并至少再说明两个适用维度；
+- 每条主标注至少一段有效说明，按模块类型选择维度；页面 `requiredDimensions` 可为空，单条补充必需维度。不为凑段落复述定义或复制公共说明；
+- 字段/操作/局部状态默认继承模块变更范围，例外通过自身 `changeStatus/changeReason` 声明；变更子项的父模块需纳入影响范围；
+- 同一模块只覆盖自身所属对象；来源引用按实际规则选择，不能整页照抄；
 - 页面级状态只有在本轮修改全页状态时才使用 `scope=page` 补充，不能替代模块主标注；
 - 标注锚点必须绑定模块自身的稳定 DOM ID。
+
+`intermediate/annotation-source.json` 是可选的可重跑规则输入，结构为 `pages[{id, modules[{id, content, data, interaction, state, layout, compliance, docs, ...}]}]`；它不是页面渲染数据。重跑未提供的维度保留，显式 `removeDimensions` 才删除，匹配失败不部分写入。规范标注在 page-spec，prototype.json 仅为镜像；人工差异层独立合并。
 
 标注只保留“标题 + 内容”两个正文字段。标题回答“当前说明的是哪个模块或元素”；内容集中记录该对象的定义、展示、数据、交互、状态和关联文档，复杂规则使用段落标题与空行分隔。同一对象存在多条标注时，标题可以写为“筛选区 · 字段说明”“筛选区 · 查询逻辑”，但不能写成“查询后回到第一页”这类动作结论。
 

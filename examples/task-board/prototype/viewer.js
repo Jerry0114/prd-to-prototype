@@ -648,17 +648,13 @@ async function hydratePage(page) {
     if (response.ok) {
       spec = await response.json();
       if (Array.isArray(spec.annotations)) {
-        const specMarkers = new Map(spec.annotations.map((marker) => [marker.id, marker]));
-        markers = markers.length
-          ? markers.map((marker) => ({
-              ...specMarkers.get(marker.id),
-              ...marker,
-              anchor: {
-                ...specMarkers.get(marker.id)?.anchor,
-                ...marker.anchor,
-              },
-            }))
-          : spec.annotations;
+        const manifestMarkers = new Map(markers.map(marker => [marker.id, marker]));
+        // The spec is authoritative; the manifest only supplies legacy geometry.
+        markers = spec.annotations.map(marker => ({
+          ...manifestMarkers.get(marker.id),
+          ...marker,
+          anchor: { ...manifestMarkers.get(marker.id)?.anchor, ...marker.anchor },
+        }));
       }
     }
   } catch {

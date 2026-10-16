@@ -39,7 +39,7 @@ node scripts/init-prototype-project.mjs \
 6. 创建 `intermediate/page-brief-gate.json`，默认 `enabled: true`、`status: "needs-confirmation"`。一次性向产品经理展示页面地图和每份页面定义 MD，逐页说明定位、结构、关键逻辑与待确认项，然后暂停；未经用户明确确认，不得生成业务 HTML、CSS、JS 或把关卡标记为 `confirmed`。
 7. 用户确认后，为每份 MD 记录 `confirmedBy: "user"`、确认时间、确认依据、待确认项已关闭状态和 SHA-256，并在关卡中记录当前 `page-map.json` 的 SHA-256，再运行 `scripts/check_page_brief_gate.js`。来源、需求模型、页面地图或逐页 MD 任一层在确认后变化，均使下游确认失效。
 8. 判断设计资产。读取 `references/design-system.md`，按目标端与项目已有规范选择通用或用户提供的设计系统；记录资产来源与适用范围。
-9. 为确认生成的每个页面创建独立的 `page-specs/<page-id>.json`。按开发交接视角定义字段、区块、交互、状态和页面说明；关键交付页面使用模块完整标注 v2.1，并完整读取 `references/annotation-authoring-rules.md`。
+9. 为确认生成的每个页面创建独立的 `page-specs/<page-id>.json`。按开发交接视角定义字段、区块、交互、状态和页面说明；新页面使用模块标注 v2.2，并完整读取 `references/annotation-authoring-rules.md`。
 10. 运行 `scripts/sync_viewer.js --project <原型目录>`，从 Skill 内置主资产复制标准查看器。不得为单个案例重新设计或重写 `index.html`、`viewer.css`、`viewer.js`；需要人工编辑标注时，通过 `scripts/serve_prototype_project.js` 启动当前项目的受限写入服务。
 11. 生成或更新业务 HTML 页面和 `prototype.json`。允许页面采用不同技术栈，但每页必须输出独立 HTML 入口并遵守查看器消息协议；写入可见文案前必须完成目标用户视角审查，研发规则只进入页面规格和标注。
 12. 让页面说明优先绑定稳定 DOM 锚点，同时保留文档百分比坐标作为回退；不使用查看器窗口坐标。
@@ -168,7 +168,7 @@ node scripts/serve_prototype_project.js \
 
 ## 页面说明
 
-页面说明的目标是让开发在不打开 PRD 的情况下完成页面主要实现，不只是提示几个重点。关键交付页面默认使用模块完整标注 v2.1，并在 `handoff.completenessTarget` 声明 `implement-without-opening-prd`。
+页面说明的目标是让开发在不打开 PRD 的情况下完成页面主要实现，不只是提示几个重点。新页面默认使用模块标注 v2.2，并在 `handoff.completenessTarget` 声明 `implement-without-opening-prd`；旧 v2.0/v2.1 继续兼容。
 
 按四层组织说明：
 
@@ -187,7 +187,8 @@ node scripts/serve_prototype_project.js \
 - 未改模块只作为页面上下文，不生成 marker；仅因插入新模块而位置下移不算受影响；
 - 纳入本轮范围的每个 `section` 必须恰好有一条 `scope: "module"`、`moduleId` 与其一致的主标注；
 - 一条主标注只能覆盖一个 `section:*`，不能把头部、推荐、广告、导航和内容列表压进同一条标注；
-- 每条模块标注至少说明 3 个适用维度，必须包含“模块定义”；所有维度统一写入 `content`，使用段落标题和空行分隔；
+- 按对象类型声明必需维度，正文只写实际适用规则，不强制定义或三段；字段、动作和局部状态声明所属 `moduleId`，覆盖范围随所属模块变化；
+- 先明确规则来源，再撰写；只引用相关需求。当前代码行为与推断不能冒充 PRD 已确认规则；公共说明集中交付，模块不互相代写；
 - 只有本轮修改全页状态时才使用额外的 `scope: "page"` 标注；模块局部异常直接写入对应模块标注。
 
 标注标题和内容必须严格分工：
@@ -205,7 +206,7 @@ node scripts/serve_prototype_project.js \
 - `full-page` 覆盖所有 section；`change-impact` 只覆盖 `new / changed / impacted` section，且禁止为 `unchanged` section 生成标注；
 - 本轮范围内的 `section`、`field`、`action` 和适用状态必须被至少一个 `annotations[].covers` 覆盖；
 - 选择型字段写明固定选项，或明确动态数据来源、默认值和空值语义；
-- 操作写明触发条件、请求参数、分页、加载、成功、空结果、失败恢复和重复提交处理；
+- 操作写明触发条件、结果、禁用与失败恢复；请求参数、分页、并发和重复提交只在该操作实际适用时补充；
 - 页面说明统一写入 `content`，按段落标题展开结构化规则；PRD、接口或业务规则统一写入“关联文档”段。
 - 未确认的接口字段、数据全集、权限和业务口径明确标记为待确认，不伪造事实；
 - 标注数量由模块数量决定，不为追求少点位合并独立模块；复杂管理页可在模块主标注之外增加字段组或操作组标注，重复列表项仍由所属列表模块统一说明。
@@ -217,7 +218,7 @@ node scripts/serve_prototype_project.js \
 3. `anchor.fallback` 保存参考视口下的文档百分比坐标；
 4. 暂无 DOM 锚点时，将 `bindingStatus` 标记为 `fallback-only`，不得声称已完成稳定绑定。
 
-已有案例需要迁移到“标题 + 分段内容”时，先预跑检查，再正式写入。标题与内容分别重跑；内容脚本以业务页面模块数据为准，按定义、展示、数据、交互和状态重建分段 `content`：
+已有案例需要更新“标题 + 分段内容”时，先预跑检查，再正式写入。标题与内容分别重跑；内容脚本以有来源依据的模块规则为准，按提供的维度合并 `content`：
 
 ```bash
 node scripts/rerun_annotation_titles.js \
@@ -235,7 +236,7 @@ node scripts/rerun_annotation_content.js \
   --project "my-project/prototype"
 ```
 
-标题脚本只重建标注标题；内容脚本同步业务模块名称和内容规则，并按段落重建模块标注的 `content`。两者都不改动锚点、需求引用或页面实现。旧项目先运行 `scripts/migrate_annotation_model.js`，把 `type / description / details / relatedDocs` 合并为标题和分段内容。业务页面使用 `window.PrototypeData` 时，标题脚本不得把 `prototype.json` 镜像覆盖到同名业务数据文件。DOM ID 无法可靠还原中文对象名时，在项目的 `intermediate/annotation-title-overrides.json` 中提供显式标题，不能根据旧规则标题猜测。
+标题脚本只重建标题。内容脚本优先读取 `intermediate/annotation-source.json`，可加 `--source <JSON>`，兼容旧业务模块 JS；按维度合并，保留未提供的有效段落。缺失模块或无效正文先阻断，成功后同步系统镜像；人工标注、锚点和业务页面不动，来源明确提供的需求引用才更新。旧结构先运行 `scripts/migrate_annotation_model.js`。不得把查看器镜像覆盖到 `window.PrototypeData` 业务数据。DOM ID 无法可靠还原中文对象名时，使用 `intermediate/annotation-title-overrides.json` 显式指定，不根据旧规则标题猜测。
 
 ## 验证
 

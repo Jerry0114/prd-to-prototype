@@ -6,7 +6,7 @@
   "license": "MIT",
   "engines": { "node": ">=22" },
   "scripts": {
-    "test": "node tests/run-tests.js && node tests/public-package.test.js",
+    "test": "node tests/run-tests.js && node tests/annotations.test.js && node tests/public-package.test.js",
     "test:browser": "node tests/viewer-browser.test.cjs",
     "demo": "node scripts/serve_prototype_project.js --project examples/task-board/prototype",
     "validate:demo": "node scripts/check_page_brief_gate.js --project examples/task-board/prototype && node scripts/validate_artifacts.js --project examples/task-board/prototype",
