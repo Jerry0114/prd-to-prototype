@@ -197,17 +197,14 @@ async function readAnnotationStore(project) {
 function updateAnnotationStorageStatusElement(element) {
   if (!element) return;
   const labels = {
-    loading: "读取保存状态",
-    saving: "正在保存到项目文件",
-    saved: "已保存到项目文件",
     local: "仅浏览器保存",
     error: "项目文件保存失败",
   };
   element.dataset.state = state.annotationPersistence.status;
-  element.querySelector("span").textContent = labels[state.annotationPersistence.status] || labels.loading;
-  element.title = state.annotationPersistence.status === "saved"
-    ? "annotations/manual-annotations.json"
-    : state.annotationPersistence.error || "人工标注保存状态";
+  const label = labels[state.annotationPersistence.status];
+  element.hidden = !label;
+  element.querySelector("span").textContent = label || "";
+  element.title = label ? state.annotationPersistence.error || "人工标注保存状态" : "";
 }
 
 function updateAnnotationStorageStatuses() {

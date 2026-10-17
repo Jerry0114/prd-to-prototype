@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#2537b8"/>
   <title>AI原型生成器</title>
   <link rel="icon" type="image/svg+xml" href="assets/prototype-viewer/prototype-mark.svg"/>
-  <link rel="stylesheet" href="viewer.css?v=20261017-3"/>
+  <link rel="stylesheet" href="viewer.css?v=20261017-4"/>
   <link rel="stylesheet" href="select-controls.css?v=20261016-3"/>
 </head>
 <body>
@@ -47,7 +47,7 @@
       <main class="workspace" id="workspace" tabindex="0" aria-label="原型画布"><div class="canvas-sizer" id="canvasSizer"><section class="canvas" id="canvas" aria-label="自动流程画布"><svg class="connections" id="connections" aria-hidden="true"></svg><div id="flow" class="flow"></div></section></div></main>
     </section>
     <aside class="inspector" id="inspector" aria-label="页面说明"><div class="inspector-empty"><svg class="icon"><use href="#icon-flow"/></svg><strong>查看完整页面流程</strong><p>选择任一页面，查看标注与页面说明。</p></div></aside>
-    <footer class="statusbar"><div class="annotation-storage-status" data-state="loading" role="status" aria-live="polite"><i aria-hidden="true"></i><span>正在读取项目</span></div><div class="statusbar-right"><span class="canvas-hint" id="canvasHint"></span><span id="pagePosition">…</span><button id="shortcutsButton" type="button" class="shortcut-link" aria-label="查看快捷键" title="查看快捷键（?）"><svg class="icon"><use href="#icon-keyboard"/></svg><span>快捷键</span><kbd>?</kbd></button></div></footer>
+    <footer class="statusbar"><div class="annotation-storage-status" data-state="loading" hidden role="status" aria-live="polite"><i aria-hidden="true"></i><span></span></div><div class="statusbar-right"><span class="canvas-hint" id="canvasHint"></span><span id="pagePosition">…</span><button id="shortcutsButton" type="button" class="shortcut-link" aria-label="查看快捷键" title="查看快捷键（?）"><svg class="icon"><use href="#icon-keyboard"/></svg><span>快捷键</span><kbd>?</kbd></button></div></footer>
     <button class="panel-backdrop" id="panelBackdrop" type="button" aria-label="关闭侧边面板" hidden></button>
   </div>
   <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
@@ -56,9 +56,9 @@
   <dialog id="shortcutsDialog" class="shortcuts-dialog" aria-labelledby="shortcutsTitle"><div class="shortcuts-heading"><h2 id="shortcutsTitle">工作台快捷键</h2><button id="closeShortcuts" type="button" class="icon-button" aria-label="关闭快捷键说明"><svg class="icon"><use href="#icon-close"/></svg></button></div><dl><div><dt>搜索页面</dt><dd><kbd>/</kbd> 或 <kbd>⌘ / Ctrl K</kbd></dd></div><div><dt>适应画布</dt><dd><kbd>0</kbd></dd></div><div><dt>原始比例</dt><dd><kbd>1</kbd></dd></div><div><dt>放大 / 缩小</dt><dd><kbd>+</kbd> / <kbd>−</kbd></dd></div><div><dt>运行原型</dt><dd><kbd>Alt Enter</kbd></dd></div><div><dt>显示 / 隐藏标注</dt><dd><kbd>M</kbd></dd></div><div><dt>取消标注操作 / 关闭预览</dt><dd><kbd>Esc</kbd></dd></div></dl><p>输入文字时不触发画布快捷键。</p></dialog>
   <template id="pageNodeTemplate"><article class="page-node"><div class="node-head"><div><span class="node-index"></span><strong class="node-title"></strong><span class="node-module"></span></div><div class="node-actions"><button type="button" class="run-button" aria-label="运行此页面"><svg class="icon"><use href="#icon-play"/></svg></button></div></div><div class="node-body"><div class="screen-stage"><div class="screen-frame"><iframe loading="lazy" title="页面预览"></iframe><span class="viewport-label">1440 × 900 · WEB</span></div></div>
     <aside class="annotation-card"><button type="button" class="icon-button close-inspector" aria-label="关闭页面说明"><svg class="icon"><use href="#icon-close"/></svg></button><div class="handoff-tabs" role="tablist" aria-label="页面说明分类"><button type="button" class="is-active" role="tab" aria-selected="true" data-handoff-tab="annotations">标注 <span class="tab-marker-count"></span></button><button type="button" role="tab" aria-selected="false" data-handoff-tab="page-info">页面说明 <span class="tab-question-count" aria-hidden="true" hidden></span></button></div>
-      <div class="handoff-panel is-active" role="tabpanel" data-handoff-panel="annotations"><div class="annotation-head"><span class="annotation-count"></span><span class="annotation-controls"><label class="marker-toggle" title="显示或隐藏页面编号标记"><span>编号</span><input type="checkbox" checked aria-label="显示页面编号标记"/><i aria-hidden="true"></i></label><button type="button" class="annotation-add-button" title="在页面上添加标记" aria-label="在页面上添加标记" aria-pressed="false"><span aria-hidden="true">＋</span><b>标记</b></button></span></div><div class="annotation-storage-status" data-state="loading"><i aria-hidden="true"></i><span>读取保存状态</span></div><div class="annotation-list"></div></div><div class="handoff-panel" role="tabpanel" data-handoff-panel="page-info"></div>
+      <div class="handoff-panel is-active" role="tabpanel" data-handoff-panel="annotations"><div class="annotation-head"><span class="annotation-count"></span><span class="annotation-controls"><label class="marker-toggle" title="显示或隐藏页面编号标记"><span>编号</span><input type="checkbox" checked aria-label="显示页面编号标记"/><i aria-hidden="true"></i></label><button type="button" class="annotation-add-button" title="在页面上添加标记" aria-label="在页面上添加标记" aria-pressed="false"><span aria-hidden="true">＋</span><b>标记</b></button></span></div><div class="annotation-storage-status" data-state="loading" hidden><i aria-hidden="true"></i><span></span></div><div class="annotation-list"></div></div><div class="handoff-panel" role="tabpanel" data-handoff-panel="page-info"></div>
     </aside></div>
   </article></template>
-  <script src="annotation-store.js?v=20261016-1"></script><script src="document-preview-core.js?v=20260819-1"></script><script src="viewer.js?v=20261017-3"></script>
+  <script src="annotation-store.js?v=20261016-1"></script><script src="document-preview-core.js?v=20260819-1"></script><script src="viewer.js?v=20261017-4"></script>
 </body>
 </html>

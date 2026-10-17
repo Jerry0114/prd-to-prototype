@@ -33,8 +33,16 @@ async function main() {
   const save = async () => {
     await page.locator('.annotation-edit-form button[type="submit"]').click();
     await expect(page.locator('.statusbar .annotation-storage-status')).toHaveAttribute('data-state', 'saved');
+    await expect(page.locator('.statusbar .annotation-storage-status')).not.toBeVisible();
+    await expect(page.locator('#inspector .annotation-storage-status')).not.toBeVisible();
   };
   await test('右侧默认标注，仅两个入口，无空背景和无待确认占位', async () => {
+    await expect(page.locator('.statusbar .annotation-storage-status')).not.toBeVisible();
+    await expect(page.locator('#inspector .annotation-storage-status')).not.toBeVisible();
+    const listTop = (await page.locator('#inspector .annotation-list').boundingBox()).y;
+    const head = await page.locator('#inspector .annotation-head').boundingBox();
+    assert.equal(listTop, head.y + head.height);
+    assert((await page.locator('.statusbar-right').boundingBox()).x > 720);
     await expect(annotationTab()).toHaveAttribute('aria-selected', 'true');
     await expect(page.locator('#inspector [role="tab"]')).toHaveCount(2);
     await expect(page.locator('#inspector [data-handoff-tab="overview"], #inspector [data-handoff-tab="states"], #inspector [data-handoff-tab="delivery"]')).toHaveCount(0);
@@ -333,6 +341,7 @@ async function main() {
     await page.locator('.annotation-edit-form input').fill('离线缓存验证');
     await page.locator('.annotation-edit-form button[type="submit"]').click();
     await expect(page.locator('.statusbar .annotation-storage-status')).toHaveAttribute('data-state', 'error');
+    await expect(page.locator('.statusbar .annotation-storage-status')).toBeVisible();
     await page.unroute('**/api/manual-annotations');
     await page.reload();
     await annotationTab().click();
