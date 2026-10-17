@@ -978,6 +978,20 @@ function renderMarkerEditor(node, page, marker, number) {
   return item;
 }
 
+function renderAnnotationContent(content) {
+  // Presentation only: keep stored notes and free-form text unchanged.
+  const headings = new Set(["模块定义", "展示内容", "数据规则", "交互逻辑", "异常与状态", "布局规则", "合规规则", "关联文档"]);
+  return String(content).split(/\n[\t ]*\n/).map(part => {
+    const newline = part.indexOf("\n");
+    const heading = part.slice(0, newline).trim();
+    if (newline > 0 && headings.has(heading)) {
+      return '<span class="annotation-section"><span class="annotation-section-heading">' + escapeHtml(part.slice(0, newline)) +
+        '</span><span class="annotation-section-body">' + escapeHtml(part.slice(newline + 1)) + '</span></span>';
+    }
+    return '<span class="annotation-prose">' + escapeHtml(part) + '</span>';
+  }).join("");
+}
+
 function renderMarkerItem(node, page, marker, number) {
   const source = markerSource(marker);
   const item = document.createElement("div");
@@ -999,7 +1013,7 @@ function renderMarkerItem(node, page, marker, number) {
           <button type="button" data-marker-action="delete" title="删除标注" aria-label="删除标注">×</button>
         </span>
       </span>
-      <span id="${escapeHtml(descriptionId)}" class="annotation-description" hidden>${escapeHtml(marker.content)}</span>
+      <span id="${escapeHtml(descriptionId)}" class="annotation-description" hidden>${renderAnnotationContent(marker.content)}</span>
     </span>`;
   item.addEventListener("click", (event) => {
     const action = event.target.closest("[data-marker-action]")?.dataset.markerAction;

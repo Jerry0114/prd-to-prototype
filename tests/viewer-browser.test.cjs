@@ -48,6 +48,79 @@ async function main() {
     await expect(page.locator('#inspector .info-note')).toContainText('不代表已执行通过');
     await annotationTab().click();
   });
+  await test('列表分割线开合不跳动，两面板标题行与嵌套层级稳定', async () => {
+    const same = (a, b) => assert(Math.abs(a - b) < 1);
+    try {
+      for (const width of [1440, 375]) {
+        await page.setViewportSize({ width, height: 960 });
+        if (width === 375) {
+          await expect(page.locator('#toggleInspector')).toHaveAttribute('aria-expanded', 'false');
+          await page.locator('#toggleInspector').click();
+        }
+        await annotationTab().click();
+        const item = page.locator('#inspector .annotation-item').first();
+        const toggle = item.locator('.annotation-disclosure');
+        if (await toggle.getAttribute('aria-expanded') === 'true') await toggle.click();
+        const closed = await item.boundingBox();
+        const title = await item.locator('.annotation-title-row').boundingBox();
+        await toggle.click();
+        const expanded = await item.boundingBox();
+        same(closed.x, expanded.x); same(closed.width, expanded.width);
+        same(title.height, (await item.locator('.annotation-title-row').boundingBox()).height);
+        await page.locator('#inspector [data-handoff-tab="page-info"]').click();
+        const group = page.locator('#inspector [data-info-section="rules"]');
+        const summary = group.locator(':scope > summary');
+        if (await group.getAttribute('open') !== null) await summary.click();
+        const groupClosed = await group.boundingBox();
+        const summaryClosed = await summary.boundingBox();
+        same(closed.x, groupClosed.x); same(closed.width, groupClosed.width);
+        same(closed.height, groupClosed.height);
+        await summary.click();
+        const groupOpen = await group.boundingBox();
+        same(groupClosed.x, groupOpen.x); same(groupClosed.width, groupOpen.width);
+        same(summaryClosed.height, (await summary.boundingBox()).height);
+        const nested = group.locator('[data-info-section="applicability"]');
+        assert((await nested.locator(':scope > summary').boundingBox()).x > groupOpen.x);
+        assert((await nested.locator(':scope > summary').boundingBox()).height < summaryClosed.height);
+        await nested.locator(':scope > summary').click();
+        same(groupOpen.width, (await group.boundingBox()).width);
+        assert(await page.locator('#inspector .handoff-panel.is-active').evaluate(e => e.scrollWidth <= e.clientWidth));
+      }
+    } finally {
+      await page.setViewportSize({ width: 1440, height: 960 });
+      await page.goto(base);
+    }
+  });
+  await test('标注分段可读且不改原文，自由文本与长标题安全显示', async () => {
+    const file = path.join(fixture, 'intermediate/page-specs/task-list.json');
+    const original = fs.readFileSync(file, 'utf8');
+    const content = '展示内容\n<img src=x onerror=alert(1)> 保持文字\n\n自由补充\n保留自定义段落\n\n交互逻辑\n点击后查看结果';
+    try {
+      const spec = JSON.parse(original);
+      spec.annotations[0].content = content;
+      spec.annotations[0].title = '长标题与层级验证'.repeat(10);
+      fs.writeFileSync(file, JSON.stringify(spec));
+      await page.reload();
+      const item = page.locator('#inspector .annotation-item').first();
+      const toggle = item.locator('.annotation-disclosure');
+      if (await toggle.getAttribute('aria-expanded') !== 'true') await toggle.click();
+      await expect(item.locator('.annotation-section-heading')).toHaveText(['展示内容', '交互逻辑']);
+      await expect(item.locator('.annotation-prose')).toHaveText('自由补充\n保留自定义段落');
+      await expect(item.locator('.annotation-description img')).toHaveCount(0);
+      await expect(item.locator('.annotation-description')).toContainText('<img src=x onerror=alert(1)>');
+      assert(await item.evaluate(e => e.scrollWidth <= e.clientWidth));
+      const openHeader = await item.locator('.annotation-title-row').boundingBox();
+      await toggle.click();
+      assert.equal((await item.locator('.annotation-title-row').boundingBox()).height, openHeader.height);
+      await item.locator('[data-marker-action="edit"]').click();
+      await expect(page.locator('.annotation-edit-form textarea')).toHaveValue(content);
+      await page.locator('[data-marker-action="cancel"]').click();
+      assert.equal(fs.readFileSync(file, 'utf8'), JSON.stringify(spec));
+    } finally {
+      fs.writeFileSync(file, original);
+      await page.goto(base);
+    }
+  });
   await test('待确认计数可发现、已处理项不计数，背景与问题按需保留', async () => {
     const file = path.join(fixture, 'intermediate/page-specs/task-list.json');
     const original = fs.readFileSync(file, 'utf8');
