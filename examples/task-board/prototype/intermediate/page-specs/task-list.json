@@ -3,7 +3,7 @@
   "projectId": "task-board-demo",
   "pageId": "task-list",
   "title": "任务列表",
-  "purpose": "管理团队任务（虚构教学案例）",
+  "purpose": "搜索和筛选团队任务，进入对应任务详情。",
   "requirementRefs": [
     "REQ-001",
     "REQ-002",
@@ -105,22 +105,22 @@
     {
       "id": "normal",
       "applicable": true,
-      "description": "展示任务内容"
+      "description": "按当前关键词与进度展示任务及匹配数量。"
     },
     {
       "id": "loading",
       "applicable": true,
-      "description": "正在加载任务"
+      "description": "在列表区域显示加载提示，保留筛选入口。"
     },
     {
       "id": "empty",
       "applicable": true,
-      "description": "没有匹配任务或任务不存在"
+      "description": "无匹配任务时保留筛选条件；修改关键词或进度可重新查看结果。"
     },
     {
       "id": "error",
       "applicable": true,
-      "description": "加载失败，可重试"
+      "description": "列表区域显示失败和重试入口，保留筛选条件；重试后恢复任务列表。"
     },
     {
       "id": "forbidden",
@@ -202,7 +202,7 @@
       "title": "任务列表",
       "scope": "module",
       "moduleId": "tasks",
-      "content": "展示内容\n每项展示标题、编号、负责人代号、截止日期和进度；结果数量随筛选更新。\n\n交互逻辑\n点击任务标题携带任务 ID 进入详情。列表不提供完成或返回操作。\n\n异常与状态\n无匹配结果时展示空态并保留筛选入口；加载、失败与重试规则见本页状态说明。",
+      "content": "展示内容\n每项展示标题、编号、负责人代号、截止日期和进度；结果数量随筛选更新。\n\n交互逻辑\n点击任务标题携带任务 ID 进入详情。列表不提供完成或返回操作。\n\n异常与状态\n无匹配结果时展示空态并保留筛选入口；加载、失败与重试规则见页面说明中的“异常与业务规则”。",
       "requirementRefs": [
         "REQ-001",
         "REQ-002",
@@ -281,73 +281,51 @@
       "actions",
       "states",
       "navigation",
-      "acceptance",
-      "roles",
-      "preconditions"
+      "acceptance"
     ],
-    "pageOverview": {
-      "roles": [
-        {
-          "label": "团队成员",
-          "description": "团队成员",
-          "requirementRefs": [
-            "REQ-001",
-            "REQ-002",
-            "REQ-003",
-            "REQ-004"
-          ]
-        }
-      ],
-      "entries": [
-        {
-          "label": "任务管理入口",
-          "description": "任务管理入口",
-          "requirementRefs": [
-            "REQ-001",
-            "REQ-002",
-            "REQ-003",
-            "REQ-004"
-          ]
-        }
-      ],
-      "exits": [
-        {
-          "label": "任务详情",
-          "description": "任务详情",
-          "requirementRefs": [
-            "REQ-001",
-            "REQ-002",
-            "REQ-003",
-            "REQ-004"
-          ]
-        }
-      ],
-      "preconditions": [
-        {
-          "label": "浏览器允许读取本地会话数据",
-          "description": "浏览器允许读取本地会话数据",
-          "requirementRefs": [
-            "REQ-001",
-            "REQ-002",
-            "REQ-003",
-            "REQ-004"
-          ]
-        }
-      ]
-    },
+    "pageOverview": {},
     "statusTransitions": [],
     "acceptanceCriteria": [
       {
-        "id": "AC-task-list",
-        "title": "页面主流程",
-        "given": "存在虚构任务数据",
-        "when": "搜索并查看任务",
-        "then": "展示对应详情",
+        "id": "AC-list-filter",
+        "title": "组合筛选",
+        "given": "存在标题和进度不同的任务",
+        "when": "输入关键词并选择进度",
+        "then": "仅展示同时符合两个条件的任务，结果数量同步更新",
+        "requirementRefs": [
+          "REQ-001"
+        ]
+      },
+      {
+        "id": "AC-list-empty",
+        "title": "无匹配结果与恢复",
+        "given": "当前筛选条件没有匹配任务",
+        "when": "查看结果后修改关键词或进度",
+        "then": "空态保留筛选入口，条件修改后可重新展示匹配结果",
         "requirementRefs": [
           "REQ-001",
-          "REQ-002",
-          "REQ-003",
-          "REQ-004"
+          "REQ-003"
+        ]
+      },
+      {
+        "id": "AC-list-open",
+        "title": "查看对应任务",
+        "given": "筛选结果中存在可查看的任务",
+        "when": "点击任务标题",
+        "then": "进入对应任务 ID 的详情页",
+        "requirementRefs": [
+          "REQ-002"
+        ]
+      },
+      {
+        "id": "AC-list-retry",
+        "title": "加载失败后重试",
+        "given": "任务列表处于加载失败状态",
+        "when": "点击重试",
+        "then": "恢复当前条件下的任务列表",
+        "requirementRefs": [
+          "REQ-001",
+          "REQ-003"
         ]
       }
     ],

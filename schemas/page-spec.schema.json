@@ -201,7 +201,7 @@
     },
     "overviewItem": {
       "type": "object",
-      "required": ["label", "description"],
+      "required": ["label"],
       "properties": {
         "label": { "type": "string" },
         "description": { "type": "string" },
@@ -211,12 +211,11 @@
     },
     "pageOverview": {
       "type": "object",
-      "required": ["roles", "entries", "exits", "preconditions"],
       "properties": {
-        "roles": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/overviewItem" } },
-        "entries": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/overviewItem" } },
-        "exits": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/overviewItem" } },
-        "preconditions": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/overviewItem" } }
+        "roles": { "type": "array", "items": { "$ref": "#/$defs/overviewItem" } },
+        "entries": { "type": "array", "items": { "$ref": "#/$defs/overviewItem" } },
+        "exits": { "type": "array", "items": { "$ref": "#/$defs/overviewItem" } },
+        "preconditions": { "type": "array", "items": { "$ref": "#/$defs/overviewItem" } }
       },
       "additionalProperties": false
     },
@@ -284,7 +283,7 @@
         },
         "coverageDimensions": {
           "type": "array",
-          "minItems": 6,
+          "minItems": 1,
           "items": { "enum": ["fields", "options", "content", "actions", "states", "permissions", "data", "exceptions", "navigation", "roles", "preconditions", "acceptance"] },
           "uniqueItems": true
         },

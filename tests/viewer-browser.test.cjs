@@ -34,6 +34,57 @@ async function main() {
     await page.locator('.annotation-edit-form button[type="submit"]').click();
     await expect(page.locator('.statusbar .annotation-storage-status')).toHaveAttribute('data-state', 'saved');
   };
+  await test('右侧默认标注，仅两个入口，无空背景和无待确认占位', async () => {
+    await expect(annotationTab()).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('#inspector [role="tab"]')).toHaveCount(2);
+    await expect(page.locator('#inspector [data-handoff-tab="overview"], #inspector [data-handoff-tab="states"], #inspector [data-handoff-tab="delivery"]')).toHaveCount(0);
+    await expect(page.locator('#inspector .tab-question-count')).not.toBeVisible();
+    await page.locator('#inspector [data-handoff-tab="page-info"]').click();
+    await expect(page.locator('#inspector .page-purpose')).toHaveText('搜索和筛选团队任务，进入对应任务详情。');
+    await expect(page.locator('#inspector [data-info-section="context"], #inspector .page-open-questions')).toHaveCount(0);
+    await expect(page.locator('#inspector')).not.toContainText('当前没有待确认事项');
+    await page.locator('#inspector [data-info-section="acceptance"] > summary').click();
+    await expect(page.locator('#inspector .acceptance-row')).toHaveCount(4);
+    await expect(page.locator('#inspector .info-note')).toContainText('不代表已执行通过');
+    await annotationTab().click();
+  });
+  await test('待确认计数可发现、已处理项不计数，背景与问题按需保留', async () => {
+    const file = path.join(fixture, 'intermediate/page-specs/task-list.json');
+    const original = fs.readFileSync(file, 'utf8');
+    try {
+      const spec = JSON.parse(original);
+      spec.openQuestions = [{ id: 'Q1', question: '筛选是否需要保存到下次会话？', impact: '影响保存范围', status: 'open', currentAssumption: '当前仅在本次会话保存' }, { id: 'Q2', question: '旧版来源已核对', impact: '不再影响本轮', status: 'confirmed' }];
+      spec.handoff.pageOverview = { roles: [{ label: '受邀成员' }], preconditions: [{ label: '已获得当前项目访问权限' }] };
+      fs.writeFileSync(file, JSON.stringify(spec));
+      await page.reload();
+      await expect(annotationTab()).toHaveAttribute('aria-selected', 'true');
+      const tab = page.locator('#inspector [data-handoff-tab="page-info"]');
+      await expect(tab).toHaveAttribute('aria-label', '页面说明，有 1 项待确认');
+      await expect(tab.locator('.tab-question-count')).toBeVisible();
+      await tab.click();
+      await expect(page.locator('#inspector .page-open-questions')).toBeInViewport();
+      await expect(page.locator('#inspector .page-open-questions')).toContainText('当前仅在本次会话保存');
+      const contextGroup = page.locator('#inspector [data-info-section="context"]');
+      await contextGroup.locator(':scope > summary').click();
+      await expect(contextGroup).toContainText('已获得当前项目访问权限');
+      await page.screenshot({ path: path.join(output, 'page-info-pending.png') });
+      await page.setViewportSize({ width: 375, height: 812 });
+      await expect(page.locator('#toggleInspector')).toHaveAttribute('aria-expanded', 'false');
+      await page.locator('#toggleInspector').click();
+      await expect(tab).toBeInViewport();
+      await expect(tab.locator('.tab-question-count')).toBeVisible();
+      assert(await tab.evaluate(element => element.scrollWidth <= element.clientWidth));
+      await page.screenshot({ path: path.join(output, 'page-info-pending-mobile.png') });
+      await page.setViewportSize({ width: 1440, height: 960 });
+      await expect(page.locator('#toggleInspector')).toHaveAttribute('aria-expanded', 'true');
+      await page.locator('#pageNav [data-page="task-detail"]').click();
+      await expect(page.locator('#inspector .tab-question-count')).not.toBeVisible();
+    } finally {
+      fs.writeFileSync(file, original);
+      await page.setViewportSize({ width: 1440, height: 960 });
+      await page.goto(base);
+    }
+  });
   await test('规格优先于过期镜像，镜像已删点位不复活，模块正文不串台', async () => {
     const file = path.join(fixture, 'prototype.json');
     const original = fs.readFileSync(file, 'utf8');
@@ -113,7 +164,7 @@ async function main() {
     await page.locator('#pageSearch').fill('详情');
     await expect(page.locator('#pageNav .nav-item')).toHaveCount(1);
     await page.locator('#pageSearch').fill('');
-    await page.locator('#inspector [data-handoff-tab="overview"]').focus();
+    await page.locator('#inspector [data-handoff-tab="page-info"]').focus();
     await page.keyboard.press('ArrowRight');
     await expect(annotationTab()).toBeFocused();
     await expect(page.locator('#activePageTitle')).toHaveText('任务列表');
@@ -124,10 +175,17 @@ async function main() {
     await expect(page.locator('#shortcutsDialog')).not.toBeVisible();
   });
   await test('右侧保留状态规则，业务筛选自然展示无结果与正常内容', async () => {
-    await page.locator('[data-handoff-tab="states"]').click();
-    await expect(page.locator('#inspector .state-summary')).toHaveCount(6);
-    await expect(page.locator('#inspector .state-summary.is-inapplicable')).toHaveCount(2);
-    await expect(page.locator('#inspector [data-handoff-panel="states"]')).toContainText('加载失败，可重试');
+    await page.locator('[data-handoff-tab="page-info"]').click();
+    const rules = page.locator('#inspector [data-info-section="rules"]');
+    await expect(rules).not.toHaveAttribute('open', '');
+    await rules.locator(':scope > summary').click();
+    await expect(rules.locator(':scope > .page-info-content > .state-summary')).toHaveCount(3);
+    await expect(rules).toContainText('列表区域显示失败和重试入口');
+    const record = rules.locator('[data-info-section="applicability"]');
+    await expect(record.locator('.state-summary.is-inapplicable').first()).not.toBeVisible();
+    await record.locator(':scope > summary').click();
+    await expect(record.locator('.state-summary')).toHaveCount(6);
+    await expect(record.locator('.state-summary.is-inapplicable')).toHaveCount(2);
     for (const select of [canvasFrame().locator('#status')]) {
       const geometry = await select.evaluate(element => {
         const style = getComputedStyle(element);
@@ -146,7 +204,7 @@ async function main() {
     await canvasFrame().locator('#status').selectOption('doing');
     await expect(canvasFrame().locator('[data-task]')).toHaveCount(1);
     await canvasFrame().locator('#status').selectOption('all');
-    await page.locator('[data-handoff-tab="overview"]').click();
+    await annotationTab().click();
   });
   await test('运行预览传参、标记完成、返回恢复筛选与关闭回到审阅', async () => {
     await page.locator('#runPrototypeButton').click();
@@ -209,8 +267,8 @@ async function main() {
     await expect(page.locator('.statusbar .annotation-storage-status')).toHaveAttribute('data-state', 'saved');
   });
   await test('关联 Markdown 在统一阅读页打开', async () => {
-    await page.locator('[data-handoff-tab="delivery"]').click();
-    const [popup] = await Promise.all([page.waitForEvent('popup'), page.locator('[data-handoff-panel="delivery"] a').first().click()]);
+    await page.locator('[data-handoff-tab="page-info"]').click();
+    const [popup] = await Promise.all([page.waitForEvent('popup'), page.locator('[data-handoff-panel="page-info"] .handoff-docs a').first().click()]);
     await expect(popup.locator('.document-content h1')).toBeVisible();
     await expect(popup.locator('.document-content')).toContainText('任务');
     await popup.close();
@@ -304,7 +362,7 @@ async function main() {
       }
     }
   });
-  await page.locator('[data-handoff-tab="overview"]').click();
+  await page.locator('[data-handoff-tab="page-info"]').click();
   await page.screenshot({ path: path.join(output, 'desktop.png') });
   await test('独立状态页在审阅和运行时保持自身画面，不被强制重置为正常态', async () => {
     const manifestPath = path.join(fixture, 'prototype.json');

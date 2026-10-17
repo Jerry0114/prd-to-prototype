@@ -52,6 +52,26 @@ try {
     spec.annotations[0].content = "模块定义\n\n展示内容\n\n交互逻辑";
     write(file, spec); expectValidation(dir, "ANNOTATION_BODY_INVALID");
   }));
+  test("v2.2 背景按需提供，不为角色与入口造说明", () => withFixture((dir, file, spec) => {
+    delete spec.handoff.pageOverview;
+    spec.handoff.coverageDimensions = ["acceptance"];
+    write(file, spec); expectValidation(dir);
+    spec.handoff.pageOverview = { roles: [{ label: "受邀成员" }] };
+    write(file, spec); expectValidation(dir);
+    spec.handoff.pageOverview.roles[0].label = "";
+    write(file, spec); expectValidation(dir, "HANDOFF_OVERVIEW_ITEM_INVALID");
+  }));
+  test("旧 v2.1 完整背景与覆盖契约仍可验证", () => withFixture((dir, file, spec) => {
+    spec.handoff.version = "2.1";
+    spec.handoff.annotationPolicy.requiredDimensions = ["definition", "content", "interaction"];
+    spec.handoff.annotationPolicy.minimumApplicableDimensions = 3;
+    spec.handoff.coverageDimensions.push("roles", "preconditions");
+    spec.handoff.pageOverview = Object.fromEntries(["roles", "entries", "exits", "preconditions"].map(key => [key, [{ label: key, description: "旧版背景说明" }]]));
+    for (const a of spec.annotations) a.content = "模块定义\n筛选或查看任务\n\n展示内容\n任务标题与进度\n\n交互逻辑\n查看对应结果\n\n数据规则\n使用当前任务数据\n\n异常与状态\n无匹配时提示";
+    spec.annotations.at(-1).covers.push(...spec.states.filter(s => s.applicable).map(s => "state:" + s.id));
+    write(file, spec); expectValidation(dir);
+    delete spec.handoff.pageOverview; write(file, spec); expectValidation(dir, "HANDOFF_OVERVIEW_MISSING");
+  }));
   test("只有文档链接不能代替模块说明", () => withFixture((dir, file, spec) => {
     spec.annotations[0].content = "关联文档\ndocs/PRD.md";
     spec.annotations[0].requiredDimensions = []; delete spec.annotations[0].ruleSources;

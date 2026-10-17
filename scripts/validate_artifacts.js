@@ -647,10 +647,10 @@ function main() {
           addError("HANDOFF_ACTION_LOGIC_MISSING", `${pageId}/${action.id} 缺少可执行的操作逻辑说明`);
         }
       }
-      if (!Array.isArray(spec.handoff.coverageDimensions) || spec.handoff.coverageDimensions.length < 6) {
+      if (!Array.isArray(spec.handoff.coverageDimensions) || spec.handoff.coverageDimensions.length < (isConciseHandoff ? 1 : 6)) {
         addError("HANDOFF_DIMENSIONS_INCOMPLETE", `${pageId} 的开发交付说明覆盖维度不足`);
       }
-      const requiredHandoffDimensions = ["roles", "preconditions", "acceptance"];
+      const requiredHandoffDimensions = isConciseHandoff ? ["acceptance"] : ["roles", "preconditions", "acceptance"];
       for (const dimension of requiredHandoffDimensions) {
         if (!spec.handoff.coverageDimensions?.includes(dimension)) {
           addError("HANDOFF_DIMENSION_MISSING", `${pageId} 的开发交付说明未声明 ${dimension} 覆盖维度`);
@@ -658,17 +658,18 @@ function main() {
       }
 
       const pageOverview = spec.handoff.pageOverview;
-      if (!pageOverview) {
+      if (!pageOverview && !isConciseHandoff) {
         addError("HANDOFF_OVERVIEW_MISSING", `${pageId} 缺少页面目的之外的角色、入口、出口和前置条件`);
-      } else {
+      } else if (pageOverview) {
         for (const groupName of ["roles", "entries", "exits", "preconditions"]) {
           const items = pageOverview[groupName];
+          if (isConciseHandoff && (items === undefined || (Array.isArray(items) && items.length === 0))) continue;
           if (!Array.isArray(items) || items.length === 0) {
             addError("HANDOFF_OVERVIEW_GROUP_MISSING", `${pageId} 的 pageOverview.${groupName} 不能为空`);
             continue;
           }
           for (const item of items) {
-            if (![item.label, item.description].every(hasText)) {
+            if (!hasText(item.label) || (!isConciseHandoff && !hasText(item.description))) {
               addError("HANDOFF_OVERVIEW_ITEM_INVALID", `${pageId} 的 pageOverview.${groupName} 存在缺少名称或说明的条目`);
             }
             for (const requirementId of item.requirementRefs || []) {

@@ -151,7 +151,7 @@ kbd { padding: 2px 5px; border: 1px solid var(--line); border-radius: 4px; backg
 .annotation-card { position: relative; display: flex; flex-direction: column; height: 100%; min-width: 0; overflow: hidden; background: #fff; }
 .close-inspector { position: absolute; top: 7px; right: 6px; width: 28px; height: 28px; z-index: 1; }
 .handoff-tabs { display: flex; flex: none; padding: 0 40px 0 12px; border-bottom: 1px solid var(--line); }
-.handoff-tabs button { flex: 1; position: relative; min-width: 0; height: 41px; border: 0; padding: 0 2px; color: var(--muted); background: transparent; font-size: 12px; }
+.handoff-tabs button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex: 1; position: relative; min-width: 0; height: 41px; border: 0; padding: 0 8px; color: var(--muted); background: transparent; font-size: 12px; }
 .handoff-tabs button:hover { color: var(--brand); background: var(--panel-2); }
 .handoff-tabs button.is-active { color: var(--brand); font-weight: 650; }
 .handoff-tabs button.is-active::after { position: absolute; bottom: -1px; left: 15%; right: 15%; height: 2px; background: var(--brand); content: ""; }
@@ -189,6 +189,34 @@ kbd { padding: 2px 5px; border: 1px solid var(--line); border-radius: 4px; backg
 .handoff-docs a { display: block; padding: 12px; border: 1px solid var(--line); border-radius: 6px; color: var(--brand); text-decoration: none; font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
 .handoff-docs a:hover { background: var(--brand-soft); }
 .handoff-doc-unavailable { color: var(--muted); font-size: 12px; }
+.tab-question-count { min-width: 17px; padding: 1px 4px; border-radius: 4px; background: #fcf3df; color: #8a5c0f; font-size: 10px; line-height: 15px; }
+.tab-question-count[hidden] { display: none; }
+.page-purpose { margin: 20px 0 16px; font-size: 13px; font-weight: 600; line-height: 1.85; overflow-wrap: anywhere; }
+.page-info-group { border-bottom: 1px solid var(--line); }
+.page-info-group > summary { display: flex; align-items: center; gap: 10px; min-height: 46px; padding: 10px 0; cursor: pointer; list-style: none; color: var(--text); font-size: 12px; font-weight: 600; }
+.page-info-group > summary::-webkit-details-marker { display: none; }
+.page-info-group > summary > span:first-child { flex: 1; }
+.page-info-group > summary::after { width: 6px; height: 6px; margin-right: 3px; border-right: 1.5px solid var(--muted); border-bottom: 1.5px solid var(--muted); transform: rotate(45deg); content: ""; flex: none; }
+.page-info-group[open] > summary::after { transform: rotate(225deg); }
+.page-info-group > summary:hover { color: var(--brand); }
+.page-info-content { padding: 2px 0 16px; }
+.page-info-content .page-info-group { margin-top: 12px; border-top: 1px solid var(--line); border-bottom: 0; }
+.page-info-content .page-info-group > summary { color: var(--muted); font-size: 11px; }
+.page-info-content .page-info-content { padding-bottom: 0; }
+.info-count { color: var(--muted); font-size: 10px; font-weight: 500; }
+.info-note { margin: 0 0 14px; color: var(--muted); font-size: 11px; line-height: 1.75; }
+.page-context { margin: 0; }
+.page-context-row { display: grid; grid-template-columns: 66px minmax(0, 1fr); gap: 10px; padding: 7px 0; font-size: 12px; line-height: 1.8; }
+.page-context dt { color: var(--muted); }
+.page-context dd { margin: 0; overflow-wrap: anywhere; }
+.page-open-questions { margin-top: 18px; padding: 12px; border: 1px solid #ecdfba; border-radius: 7px; background: #fffaf0; }
+.page-open-questions h3 { display: flex; justify-content: space-between; margin: 0 0 12px; color: #8a5c0f; font-size: 12px; }
+.page-open-questions .delivery-row:last-child, .page-info-content .state-summary:last-child, .page-info-content .acceptance-row:last-child, .page-info-content .transition-row:last-child { border-bottom: 0; padding-bottom: 0; }
+.page-open-questions .delivery-row strong { overflow-wrap: anywhere; }
+.page-documents { padding-top: 20px; }
+.page-documents h3 { margin: 0 0 10px; color: var(--muted); font-size: 11px; font-weight: 500; }
+.page-documents .handoff-docs { gap: 4px; }
+.page-documents .handoff-docs a { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; border: 0; padding: 8px 0; border-radius: 0; }
 .annotation-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 0; border-bottom: 1px solid var(--line); }
 .annotation-count { font-size: 11px; color: var(--muted); font-style: normal; }
 .annotation-controls { display: flex; align-items: center; gap: 14px; }

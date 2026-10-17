@@ -3,7 +3,7 @@
   "projectId": "task-board-demo",
   "pageId": "task-detail",
   "title": "任务详情",
-  "purpose": "管理团队任务（虚构教学案例）",
+  "purpose": "查看任务详情、标记完成，并返回原筛选结果。",
   "requirementRefs": [
     "REQ-001",
     "REQ-002",
@@ -90,22 +90,22 @@
     {
       "id": "normal",
       "applicable": true,
-      "description": "展示任务内容"
+      "description": "展示当前任务信息和可执行操作。"
     },
     {
       "id": "loading",
       "applicable": true,
-      "description": "正在加载任务"
+      "description": "任务信息区域显示加载提示；完成按钮禁用，返回列表仍可用。"
     },
     {
       "id": "empty",
       "applicable": true,
-      "description": "没有匹配任务或任务不存在"
+      "description": "任务 ID 不存在时显示找不到任务，禁用完成操作；仍可返回列表。"
     },
     {
       "id": "error",
       "applicable": true,
-      "description": "加载失败，可重试"
+      "description": "任务信息区域显示失败和重试入口，完成按钮禁用；重试后按当前 ID 展示任务。"
     },
     {
       "id": "forbidden",
@@ -237,65 +237,13 @@
     },
     "coverageDimensions": [
       "fields",
-      "options",
       "content",
       "actions",
       "states",
       "navigation",
-      "acceptance",
-      "roles",
-      "preconditions"
+      "acceptance"
     ],
-    "pageOverview": {
-      "roles": [
-        {
-          "label": "团队成员",
-          "description": "团队成员",
-          "requirementRefs": [
-            "REQ-001",
-            "REQ-002",
-            "REQ-003",
-            "REQ-004"
-          ]
-        }
-      ],
-      "entries": [
-        {
-          "label": "任务列表",
-          "description": "任务列表",
-          "requirementRefs": [
-            "REQ-001",
-            "REQ-002",
-            "REQ-003",
-            "REQ-004"
-          ]
-        }
-      ],
-      "exits": [
-        {
-          "label": "返回任务列表",
-          "description": "返回任务列表",
-          "requirementRefs": [
-            "REQ-001",
-            "REQ-002",
-            "REQ-003",
-            "REQ-004"
-          ]
-        }
-      ],
-      "preconditions": [
-        {
-          "label": "浏览器允许读取本地会话数据",
-          "description": "浏览器允许读取本地会话数据",
-          "requirementRefs": [
-            "REQ-001",
-            "REQ-002",
-            "REQ-003",
-            "REQ-004"
-          ]
-        }
-      ]
-    },
+    "pageOverview": {},
     "statusTransitions": [
       {
         "id": "finish",
@@ -313,16 +261,48 @@
     ],
     "acceptanceCriteria": [
       {
-        "id": "AC-task-detail",
-        "title": "页面主流程",
-        "given": "存在虚构任务数据",
-        "when": "完成任务后返回列表",
-        "then": "列表显示已完成状态且保留筛选条件",
+        "id": "AC-detail-complete",
+        "title": "完成任务并保留结果",
+        "given": "当前任务有效且尚未完成，浏览器允许保存会话",
+        "when": "点击标记完成后刷新",
+        "then": "任务保持已完成，完成按钮禁用",
+        "requirementRefs": [
+          "REQ-002",
+          "REQ-004"
+        ]
+      },
+      {
+        "id": "AC-detail-back",
+        "title": "返回后恢复筛选",
+        "given": "从设置了关键词和进度条件的列表进入详情",
+        "when": "返回列表",
+        "then": "恢复原条件，并按最新任务状态显示匹配结果",
         "requirementRefs": [
           "REQ-001",
           "REQ-002",
-          "REQ-003",
           "REQ-004"
+        ]
+      },
+      {
+        "id": "AC-detail-missing",
+        "title": "任务不存在时仍可返回",
+        "given": "当前任务 ID 在数据中不存在",
+        "when": "打开详情",
+        "then": "显示找不到任务，完成操作禁用，返回列表可用",
+        "requirementRefs": [
+          "REQ-002",
+          "REQ-003"
+        ]
+      },
+      {
+        "id": "AC-detail-retry",
+        "title": "详情失败后重试",
+        "given": "有效任务详情处于加载失败状态",
+        "when": "点击重试",
+        "then": "恢复当前 ID 的任务信息和可用操作",
+        "requirementRefs": [
+          "REQ-002",
+          "REQ-003"
         ]
       }
     ],

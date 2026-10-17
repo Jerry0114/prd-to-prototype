@@ -5,7 +5,7 @@ const state = {
   autoFit: true,
   sidebarOpen: window.innerWidth > 720,
   inspectorOpen: window.innerWidth > 980,
-  handoffTab: "overview",
+  handoffTab: "annotations",
   showMarkers: true,
   activePage: null,
   previewPath: null,
@@ -460,143 +460,82 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
-function renderOverviewGroup(title, items, emptyText) {
-  const normalizedItems = Array.isArray(items) ? items : [];
-  const content = normalizedItems.length
-    ? normalizedItems.map((item) => `<div class="handoff-row"><strong>${escapeHtml(item.label)}</strong>${item.description && item.description !== item.label ? `<p>${escapeHtml(item.description)}</p>` : ""}</div>`).join("")
-    : `<p class="handoff-empty">${escapeHtml(emptyText)}</p>`;
-  return `<section class="handoff-section"><h3>${escapeHtml(title)}</h3><div class="handoff-rows">${content}</div></section>`;
-}
-
-function renderOverviewPanel(node, page) {
-  const panel = inspectorFor(node).querySelector('[data-handoff-panel="overview"]');
-  const spec = page.spec;
-  if (!spec) {
-    panel.innerHTML = '<div class="annotation-empty">页面规格加载失败，暂时无法展示页面概要</div>';
-    return;
-  }
-  const overview = spec.handoff?.pageOverview || {};
-  panel.innerHTML = `
-    <section class="handoff-section handoff-purpose">
-      <h3>页面目的</h3>
-      <p>${escapeHtml(spec.purpose)}</p>
-    </section>
-    ${renderOverviewGroup("使用角色", overview.roles, "旧版页面尚未单独声明使用角色")}
-    ${renderOverviewGroup("入口", overview.entries, "旧版页面尚未单独声明入口")}
-    ${renderOverviewGroup("出口", overview.exits, "旧版页面尚未单独声明出口")}
-    ${renderOverviewGroup("前置条件", overview.preconditions, "旧版页面尚未单独声明前置条件")}
-  `;
-}
-
-function renderStatesPanel(node, page) {
-  const panel = inspectorFor(node).querySelector('[data-handoff-panel="states"]');
-  const spec = page.spec;
-  if (!spec) {
-    panel.innerHTML = '<div class="annotation-empty">页面规格加载失败，暂时无法展示页面状态</div>';
-    return;
-  }
-  const stateLabels = {
-    normal: "正常",
-    loading: "加载",
-    empty: "空数据",
-    error: "失败",
-    forbidden: "无权限",
-    expired: "失效",
-  };
-  const stateRows = (spec.states || []).map((item) => `
-    <div class="state-summary${item.applicable ? "" : " is-inapplicable"}">
-      <div><strong>${escapeHtml(stateLabels[item.id] || item.id)}</strong><em>${item.applicable ? "适用" : "不适用"}</em></div>
-      <p>${escapeHtml(item.description)}</p>
-    </div>
-  `).join("");
-  const transitions = spec.handoff?.statusTransitions || [];
-  const transitionRows = transitions.length
-    ? transitions.map((item) => `
-      <div class="transition-row">
-        <div class="transition-path"><span>${escapeHtml(item.from)}</span><i>→</i><span>${escapeHtml(item.to)}</span></div>
-        <strong>${escapeHtml(item.trigger)}</strong>
-        <p>${escapeHtml(item.rule)}</p>
-      </div>
-    `).join("")
-    : '<p class="handoff-empty">本页不直接改变业务状态，或旧版规格尚未单独声明状态流转。</p>';
-  panel.innerHTML = `
-    <section class="handoff-section">
-      <h3>页面状态</h3>
-      <div class="state-list">${stateRows || '<p class="handoff-empty">暂无页面状态声明</p>'}</div>
-    </section>
-    <section class="handoff-section">
-      <h3>状态变化</h3>
-      <div class="transition-list">${transitionRows}</div>
-    </section>
-  `;
+function renderInfoGroup(title, content, key, count) {
+  if (!content) return "";
+  const counter = Number.isInteger(count) ? '<span class="info-count">' + count + '</span>' : "";
+  return '<details class="page-info-group" data-info-section="' + key + '"><summary><span>' + escapeHtml(title) + '</span>' + counter + '</summary><div class="page-info-content">' + content + '</div></details>';
 }
 
 function renderQuestion(question, index) {
-  if (typeof question === "string") {
-    return `<div class="delivery-row"><div><strong>待确认 ${index + 1}</strong><em class="status-open">未确认</em></div><p>${escapeHtml(question)}</p></div>`;
-  }
-  const statusLabels = { open: "未确认", confirmed: "已确认", rejected: "已否决" };
-  const assumption = question.currentAssumption
-    ? `<small><b>当前假设：</b>${escapeHtml(question.currentAssumption)}</small>`
-    : "";
-  return `
-    <div class="delivery-row">
-      <div><strong>${escapeHtml(question.question)}</strong><em class="status-${escapeHtml(question.status)}">${escapeHtml(statusLabels[question.status] || question.status)}</em></div>
-      <p><b>影响：</b>${escapeHtml(question.impact)}</p>
-      ${assumption}
-    </div>
-  `;
+  if (typeof question === "string") return '<div class="delivery-row"><strong>待确认 ' + (index + 1) + '</strong><p>' + escapeHtml(question) + '</p></div>';
+  const labels = { open: "未确认", confirmed: "已确认", rejected: "已否决" };
+  return '<div class="delivery-row"><div><strong>' + escapeHtml(question.question) + '</strong><em class="status-' + escapeHtml(question.status) + '">' + escapeHtml(labels[question.status] || question.status) + '</em></div>' +
+    (question.impact ? '<p><b>影响：</b>' + escapeHtml(question.impact) + '</p>' : "") +
+    (question.currentAssumption ? '<small><b>当前假设：</b>' + escapeHtml(question.currentAssumption) + '</small>' : "") + '</div>';
 }
 
-function renderDeliveryPanel(node, page) {
-  const panel = inspectorFor(node).querySelector('[data-handoff-panel="delivery"]');
+function renderStateRows(items, showApplicability = false) {
+  const labels = { normal: "正常", loading: "加载", empty: "空数据", error: "失败", forbidden: "无权限", expired: "失效" };
+  return items.map(item => '<div class="state-summary' + (item.applicable ? "" : " is-inapplicable") + '"><div><strong>' +
+    escapeHtml(labels[item.id] || item.id) + '</strong>' + (showApplicability ? '<em>' + (item.applicable ? "适用" : "不适用") + '</em>' : "") +
+    '</div><p>' + escapeHtml(item.description) + '</p></div>').join("");
+}
+
+function renderPageInfoPanel(node, page) {
+  const inspector = inspectorFor(node);
+  const panel = inspector.querySelector('[data-handoff-panel="page-info"]');
+  const button = inspector.querySelector('[data-handoff-tab="page-info"]');
+  const badge = button.querySelector(".tab-question-count");
   const spec = page.spec;
+  const questions = Array.isArray(spec?.openQuestions) ? spec.openQuestions : [];
+  const pending = questions.filter(item => typeof item === "string" || item.status === "open");
+  const resolved = questions.filter(item => typeof item !== "string" && ["confirmed", "rejected"].includes(item.status));
+  badge.textContent = String(pending.length);
+  badge.hidden = pending.length === 0;
+  button.classList.toggle("has-open-questions", pending.length > 0);
+  button.setAttribute("aria-label", pending.length ? "页面说明，有 " + pending.length + " 项待确认" : "页面说明");
   if (!spec) {
-    panel.innerHTML = '<div class="annotation-empty">页面规格加载失败，暂时无法展示交付检查</div>';
+    panel.innerHTML = '<div class="annotation-empty">页面说明暂不可用，请重新加载页面。</div>';
     return;
   }
-  const questions = spec.openQuestions || [];
-  const criteria = spec.handoff?.acceptanceCriteria || [];
-  const docs = spec.handoff?.relatedDocs || [];
-  const questionRows = questions.length
-    ? questions.map(renderQuestion).join("")
-    : '<p class="handoff-empty">当前没有待确认事项</p>';
-  const criterionRows = criteria.length
-    ? criteria.map((item) => `
-      <div class="acceptance-row">
-        <strong>${escapeHtml(item.title)}</strong>
-        <dl>
-          <div><dt>前置</dt><dd>${escapeHtml(item.given)}</dd></div>
-          <div><dt>操作</dt><dd>${escapeHtml(item.when)}</dd></div>
-          <div><dt>结果</dt><dd>${escapeHtml(item.then)}</dd></div>
-        </dl>
-      </div>
-    `).join("")
-    : '<p class="handoff-empty">旧版页面尚未提供结构化验收标准</p>';
-  const docRows = docs.length
-    ? docs.map((doc) => {
-      const href = window.PrototypeDocumentPreview.relatedDocHref(doc);
-      if (href === "#") return `<span class="handoff-doc-unavailable">${escapeHtml(doc.label)} · 文档路径不可用</span>`;
-      return `<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer">${escapeHtml(doc.label)}${doc.section ? ` · ${escapeHtml(doc.section)}` : ""}</a>`;
-    }).join("")
-    : '<p class="handoff-empty">暂无关联文档</p>';
-  panel.innerHTML = `
-    <section class="handoff-section">
-      <h3>待确认事项</h3>
-      <div class="delivery-list">${questionRows}</div>
-    </section>
-    <section class="handoff-section">
-      <h3>验收标准</h3>
-      <div class="acceptance-list">${criterionRows}</div>
-    </section>
-    <section class="handoff-section">
-      <h3>关联文档</h3>
-      <div class="handoff-docs">${docRows}</div>
-    </section>
-  `;
+  const handoff = spec.handoff || {};
+  const overview = handoff.pageOverview || {};
+  const contextLabels = { roles: "使用角色", entries: "入口", exits: "离开页面", preconditions: "前置条件" };
+  const context = Object.entries(contextLabels).map(([key, label]) => {
+    const values = (Array.isArray(overview[key]) ? overview[key] : []).filter(item => item.label || item.description)
+      .map(item => escapeHtml(item.label || item.description) + (item.description && item.description !== item.label ? "：" + escapeHtml(item.description) : ""));
+    return values.length ? '<div class="page-context-row"><dt>' + label + '</dt><dd>' + values.join("；") + '</dd></div>' : "";
+  }).join("");
+  const states = Array.isArray(spec.states) ? spec.states : [];
+  const applicable = states.filter(item => item.applicable && item.id !== "normal");
+  const transitions = Array.isArray(handoff.statusTransitions) ? handoff.statusTransitions : [];
+  const transitionRows = transitions.map(item => '<div class="transition-row"><div class="transition-path"><span>' + escapeHtml(item.from) +
+    '</span><i aria-hidden="true">→</i><span>' + escapeHtml(item.to) + '</span></div><strong>' + escapeHtml(item.trigger) + '</strong><p>' + escapeHtml(item.rule) + '</p></div>').join("");
+  const rules = renderStateRows(applicable) +
+    renderInfoGroup("业务流转", transitionRows, "transitions", transitions.length) +
+    renderInfoGroup("状态适用性记录", renderStateRows(states, true), "applicability", states.length);
+  const criteria = Array.isArray(handoff.acceptanceCriteria) ? handoff.acceptanceCriteria : [];
+  const criterionRows = criteria.map(item => '<div class="acceptance-row"><strong>' + escapeHtml(item.title) +
+    '</strong><dl><div><dt>前置</dt><dd>' + escapeHtml(item.given) + '</dd></div><div><dt>操作</dt><dd>' + escapeHtml(item.when) +
+    '</dd></div><div><dt>结果</dt><dd>' + escapeHtml(item.then) + '</dd></div></dl></div>').join("");
+  const docs = Array.isArray(handoff.relatedDocs) ? handoff.relatedDocs : [];
+  const docRows = docs.map(doc => {
+    const href = window.PrototypeDocumentPreview.relatedDocHref(doc);
+    if (href === "#") return '<span class="handoff-doc-unavailable">' + escapeHtml(doc.label) + ' · 文档暂不可用</span>';
+    return '<a href="' + escapeHtml(href) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(doc.label) + (doc.section ? " · " + escapeHtml(doc.section) : "") + '<span aria-hidden="true">↗</span></a>';
+  }).join("");
+  panel.innerHTML =
+    (pending.length ? '<section class="page-open-questions"><h3>待确认事项 <span>' + pending.length + '</span></h3>' + pending.map(renderQuestion).join("") + '</section>' : "") +
+    (spec.purpose ? '<p class="page-purpose">' + escapeHtml(spec.purpose) + '</p>' : "") +
+    renderInfoGroup("背景与适用范围", context ? '<dl class="page-context">' + context + '</dl>' : "", "context") +
+    renderInfoGroup("异常与业务规则", rules, "rules") +
+    renderInfoGroup("验收清单", criterionRows ? '<p class="info-note">以下为核对条件，不代表已执行通过。</p>' + criterionRows : "", "acceptance", criteria.length) +
+    (docRows ? '<section class="page-documents"><h3>关联文档</h3><div class="handoff-docs">' + docRows + '</div></section>' : "") +
+    renderInfoGroup("已处理事项", resolved.map(renderQuestion).join(""), "resolved-questions", resolved.length);
 }
 
 function setHandoffTab(node, tabName) {
+  if (!["annotations", "page-info"].includes(tabName)) tabName = "annotations";
   if (state.mode === "page") state.handoffTab = tabName;
   inspectorFor(node).querySelectorAll("[data-handoff-tab]").forEach((button) => {
     const active = button.dataset.handoffTab === tabName;
@@ -631,9 +570,7 @@ function bindHandoffTabs(node) {
 }
 
 function renderHandoff(node, page) {
-  renderOverviewPanel(node, page);
-  renderStatesPanel(node, page);
-  renderDeliveryPanel(node, page);
+  renderPageInfoPanel(node, page);
   renderMarkers(node, page);
   bindHandoffTabs(node);
   setHandoffTab(node, state.handoffTab);
@@ -897,7 +834,7 @@ function renderOverview() {
   if (!state.manifest || !canLeaveEditor()) return;
   resetAnnotationInteraction();
   state.mode = "overview";
-  els.inspector.innerHTML = '<div class="inspector-empty"><svg class="icon" aria-hidden="true"><use href="#icon-flow"/></svg><strong>查看完整页面流程</strong><p>选择任一页面，查看概要、标注与交付说明。</p></div>';
+  els.inspector.innerHTML = '<div class="inspector-empty"><svg class="icon" aria-hidden="true"><use href="#icon-flow"/></svg><strong>查看完整页面流程</strong><p>选择任一页面，查看标注与页面说明。</p></div>';
   history.replaceState(null, "", "#overview");
   els.canvas.className = "canvas is-overview-canvas";
   els.flow.className = "flow is-overview-mode";
